@@ -1,21 +1,24 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { fbAuth } from "../lib/firebase";
-import { Link } from "react-router-dom";
 
-export default function Login() {
-  const [email,setEmail] = useState("");
-  const [password,setPassword] = useState("");
-  const [err,setErr] = useState<string|null>(null);
+export default function Register() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErr(null);
     try {
-      const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+      // 1) Create Firebase user
+      const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
 
-      // exchange Firebase ID token for a server session cookie
-      const idToken = await cred.user.getIdToken(/* forceRefresh? */ true);
+      // 2) Send verification email (optional to block here)
+      await sendEmailVerification(cred.user);
+
+      // 3) Exchange Firebase ID token for your server session cookie
+      const idToken = await cred.user.getIdToken(true);
       await fetch(`${import.meta.env.VITE_API_BASE}/auth/session`, {
         method: "POST",
         credentials: "include",
@@ -23,18 +26,18 @@ export default function Login() {
         body: JSON.stringify({ idToken }),
       });
 
-      // redirect to your app page
+      // 4) Navigate into the app
       location.href = "/app";
-    } catch (e:any) {
-      setErr(e.message ?? "Login failed");
+    } catch (e: any) {
+      setErr(e?.message ?? "Registration failed");
     }
   }
 
   return (
     <main style={{ maxWidth: 420, margin: "5rem auto", padding: 24 }}>
-      <h1>PeerPrep</h1>
+      <h1>Create your PeerPrep account</h1>
       {err && <p style={{ color: "crimson" }}>{err}</p>}
-  
+
       <form onSubmit={onSubmit}>
         <label>
           Email
@@ -46,10 +49,9 @@ export default function Login() {
             required
           />
         </label>
-  
-        <br />
-        <br />
-  
+
+        <br /><br />
+
         <label>
           Password
           <br />
@@ -60,17 +62,11 @@ export default function Login() {
             required
           />
         </label>
-  
-        <br />
-        <br />
-  
-        <button type="submit">Log in</button>
+
+        <br /><br />
+
+        <button type="submit">Create account</button>
       </form>
-  
-      {/* NEW: link to the Register page */}
-      <p style={{ marginTop: 12 }}>
-        Don’t have an account? <Link to="/register">Create one</Link>
-      </p>
     </main>
   );
 }
