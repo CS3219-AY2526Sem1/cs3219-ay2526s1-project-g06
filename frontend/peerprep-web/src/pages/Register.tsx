@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import { fbAuth } from "../lib/firebase";
+import { getFirebaseAuth } from "../lib/firebase";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -12,7 +12,7 @@ export default function Register() {
     setErr(null);
     try {
       // 1) Create Firebase user
-      const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
+      const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email, password);
 
       // 2) Send verification email (optional to block here)
       await sendEmailVerification(cred.user);
