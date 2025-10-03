@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { fbAuth } from "../lib/firebase";
+import { getFirebaseAuth } from "../lib/firebase";
 import { Link } from "react-router-dom";
 
 export default function Login() {
@@ -12,7 +12,7 @@ export default function Login() {
     e.preventDefault();
     setErr(null);
     try {
-      const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+      const cred = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
 
       // exchange Firebase ID token for a server session cookie
       const idToken = await cred.user.getIdToken(/* forceRefresh? */ true);
