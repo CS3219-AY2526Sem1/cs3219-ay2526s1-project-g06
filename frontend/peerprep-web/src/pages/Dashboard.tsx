@@ -34,7 +34,7 @@ export default function Dashboard() {
       console.log("Match found!", match);
       setIsSearching(false);
       setMatchFound(match);
-      setStatusMessage(`Matched with ${match.user1.userId === user?.uid ? match.user2.email : match.user1.email}!`);
+      setStatusMessage(`Matched with ${match.user1.userId === user?.sub ? match.user2.email : match.user1.email}!`);
     });
 
     socketRef.current.on("match_cancelled", (data) => {
@@ -69,7 +69,7 @@ export default function Dashboard() {
     setIsSearching(true);
     setStatusMessage("Searching for a match...");
     socketRef.current.emit("find_match", {
-      userId: user.uid,
+      userId: user.sub,
       email: user.email,
       difficulties: selectedDifficulties,
       topics: selectedTopics,
@@ -79,7 +79,7 @@ export default function Dashboard() {
   const handleCancelMatch = () => {
     if (!user || !socketRef.current) return;
 
-    socketRef.current.emit("cancel_match", { userId: user.uid });
+    socketRef.current.emit("cancel_match", { userId: user.sub });
     setIsSearching(false);
     setStatusMessage("");
   };
@@ -146,7 +146,7 @@ export default function Dashboard() {
         }}>
           <h3>Match Details</h3>
           <p><strong>Room ID:</strong> {matchFound.roomId}</p>
-          <p><strong>Partner:</strong> {matchFound.user1.userId === user?.uid ? matchFound.user2.email : matchFound.user1.email}</p>
+          <p><strong>Partner:</strong> {matchFound.user1.userId === user?.sub ? matchFound.user2.email : matchFound.user1.email}</p>
           <p><strong>Difficulties:</strong> {matchFound.difficulties.join(", ")}</p>
           <p><strong>Topics:</strong> {matchFound.topics.join(", ")}</p>
           <p style={{ marginTop: "1rem", fontStyle: "italic" }}>Collaboration room coming soon!</p>
