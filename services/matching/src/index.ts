@@ -79,6 +79,6 @@ setInterval(() => {
 }, 10000);
 
 const PORT = process.env.PORT || 4002;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Matching service running on http://localhost:${PORT}`);
 });
