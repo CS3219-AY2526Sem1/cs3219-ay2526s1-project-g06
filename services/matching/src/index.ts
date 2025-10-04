@@ -78,7 +78,7 @@ setInterval(() => {
   matchingQueue.clearStaleRequests(30000); // 30 seconds timeout
 }, 10000);
 
-const PORT = process.env.PORT || 4002;
-httpServer.listen(PORT, () => {
+const PORT = Number(process.env.PORT) || 4002;
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Matching service running on http://localhost:${PORT}`);
 });

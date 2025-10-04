@@ -30,7 +30,7 @@ async function main() {
   });
 
   const port = Number(process.env.PORT) || 4001;
-  app.listen(port, () => {
+  app.listen(port, "0.0.0.0", () => {
     console.log(`User service on http://localhost:${port}`);
   });
 
