@@ -23,8 +23,8 @@ export default function Dashboard() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Connect to matching service
-    socketRef.current = io("http://localhost:4002");
+    // Connect to matching service via Nginx
+    socketRef.current = io("http://16.176.159.10");
 
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);
