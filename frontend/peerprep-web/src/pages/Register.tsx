@@ -4,16 +4,48 @@ import { auth } from '../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
+// Password validation function
+const validatePassword = (password: string): string | null => {
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number';
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return 'Password must contain at least one special character';
+  }
+  return null; // Password is valid
+};
+
 export default function Register() {
   const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [passwordError, setPasswordError] = useState(''); // New state for password validation
   const { setUser } = useAuth();
   const navigate = useNavigate();
+
+  // Real-time password validation
+  const handlePasswordChange = (password: string) => {
+    setFormData({ ...formData, password });
+    const validationError = validatePassword(password);
+    setPasswordError(validationError || '');
+  };
 
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate password before submitting
+    const passwordValidationError = validatePassword(formData.password);
+    if (passwordValidationError) {
+      setError(passwordValidationError);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -57,9 +89,9 @@ export default function Register() {
         alt="PeerPrep Logo" 
         style={{
           position: 'absolute',
-          top: '1rem',
+          top: '0.25rem',
           right: '1rem',
-          width: '60px',  
+          width: '60px',
           height: 'auto',
           zIndex: 10
         }}
@@ -178,16 +210,45 @@ export default function Register() {
             <input
               type="password"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) => handlePasswordChange(e.target.value)}
               required
               style={{ 
                 width: '100%', 
                 padding: '0.5rem', 
                 marginTop: '0.25rem',
-                border: '1px solid #ccc',
+                border: `1px solid ${passwordError ? '#dc3545' : '#ccc'}`,
                 borderRadius: '4px'
               }}
             />
+            
+            {/* Password requirements */}
+            <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#666' }}>
+              Password must contain:
+              <ul style={{ margin: '0.25rem 0', paddingLeft: '1.5rem' }}>
+                <li style={{ color: formData.password.length >= 8 ? '#28a745' : '#dc3545' }}>
+                  At least 8 characters
+                </li>
+                <li style={{ color: /[A-Z]/.test(formData.password) ? '#28a745' : '#dc3545' }}>
+                  One uppercase letter
+                </li>
+                <li style={{ color: /[0-9]/.test(formData.password) ? '#28a745' : '#dc3545' }}>
+                  One number
+                </li>
+                <li style={{ color: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? '#28a745' : '#dc3545' }}>
+                  One special character
+                </li>
+              </ul>
+            </div>
+
+            {passwordError && (
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: '#dc3545', 
+                marginTop: '0.25rem' 
+              }}>
+                {passwordError}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
@@ -209,16 +270,16 @@ export default function Register() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !!passwordError}
             style={{
               width: '100%',
               padding: '0.75rem',
               fontSize: '1rem',
-              backgroundColor: '#28a745',
+              backgroundColor: (loading || passwordError) ? '#ccc' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: loading ? 'not-allowed' : 'pointer'
+              cursor: (loading || passwordError) ? 'not-allowed' : 'pointer'
             }}
           >
             {loading ? 'Creating account...' : 'Create Account'}
