@@ -6,7 +6,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import bodyParser from "body-parser";
 
-import authRouter from "./routes/auth";
+import { authRouter } from "./routes/auth";
 import { requireSession, AuthedReq } from "./mw/requireSession";
 
 async function main() {

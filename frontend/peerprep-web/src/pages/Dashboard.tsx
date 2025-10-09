@@ -24,7 +24,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Connect to matching service via Nginx
-    socketRef.current = io("http://16.176.159.10");
+    // socketRef.current = io("http://16.176.159.10");
+
+    // Connect to matching service - use local for development
+    socketRef.current = io("http://localhost:4002");
 
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);
@@ -85,110 +88,126 @@ export default function Dashboard() {
   };
 
   return (
-    <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-        <h1>Welcome, {user?.email}</h1>
-        <button onClick={signOut}>Log out</button>
-      </div>
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      {/* Logo in top right */}
+      <img 
+        src="/peerprep_logo.png" 
+        alt="PeerPrep Logo" 
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          width: '60px',  
+          height: 'auto',
+          zIndex: 10
+        }}
+      />
 
-      <div style={{ marginBottom: "2rem" }}>
-        <h2>Select Difficulty</h2>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          {DIFFICULTIES.map((difficulty) => (
-            <label key={difficulty} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={selectedDifficulties.includes(difficulty)}
-                onChange={() => toggleDifficulty(difficulty)}
-              />
-              <span>{difficulty}</span>
-            </label>
-          ))}
+      <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+          <h1>Welcome, {user?.email}</h1>
+          <button onClick={signOut}>Log out</button>
         </div>
-      </div>
 
-      <div style={{ marginBottom: "2rem" }}>
-        <h2>Select Topics</h2>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          {TOPICS.map((topic) => (
-            <label key={topic} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={selectedTopics.includes(topic)}
-                onChange={() => toggleTopic(topic)}
-              />
-              <span>{topic}</span>
-            </label>
-          ))}
+        <div style={{ marginBottom: "2rem" }}>
+          <h2>Select Difficulty</h2>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            {DIFFICULTIES.map((difficulty) => (
+              <label key={difficulty} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedDifficulties.includes(difficulty)}
+                  onChange={() => toggleDifficulty(difficulty)}
+                />
+                <span>{difficulty}</span>
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {statusMessage && (
-        <div style={{
-          padding: "1rem",
-          marginBottom: "1rem",
-          backgroundColor: matchFound ? "#d4edda" : "#fff3cd",
-          color: matchFound ? "#155724" : "#856404",
-          borderRadius: "4px",
-          border: `1px solid ${matchFound ? "#c3e6cb" : "#ffeeba"}`
-        }}>
-          {statusMessage}
+        <div style={{ marginBottom: "2rem" }}>
+          <h2>Select Topics</h2>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            {TOPICS.map((topic) => (
+              <label key={topic} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedTopics.includes(topic)}
+                  onChange={() => toggleTopic(topic)}
+                />
+                <span>{topic}</span>
+              </label>
+            ))}
+          </div>
         </div>
-      )}
 
-      {matchFound && (
-        <div style={{
-          padding: "1.5rem",
-          marginBottom: "1rem",
-          backgroundColor: "#e7f3ff",
-          borderRadius: "8px",
-          border: "1px solid #b3d9ff"
-        }}>
-          <h3>Match Details</h3>
-          <p><strong>Room ID:</strong> {matchFound.roomId}</p>
-          <p><strong>Partner:</strong> {matchFound.user1.userId === user?.sub ? matchFound.user2.email : matchFound.user1.email}</p>
-          <p><strong>Difficulties:</strong> {matchFound.difficulties.join(", ")}</p>
-          <p><strong>Topics:</strong> {matchFound.topics.join(", ")}</p>
-          <p style={{ marginTop: "1rem", fontStyle: "italic" }}>Collaboration room coming soon!</p>
-        </div>
-      )}
-
-      {!isSearching && !matchFound && (
-        <button
-          onClick={handleFindMatch}
-          disabled={!canFindMatch}
-          style={{
-            padding: "0.75rem 2rem",
-            fontSize: "1rem",
-            fontWeight: "bold",
-            backgroundColor: canFindMatch ? "#4CAF50" : "#ccc",
-            color: "white",
-            border: "none",
+        {statusMessage && (
+          <div style={{
+            padding: "1rem",
+            marginBottom: "1rem",
+            backgroundColor: matchFound ? "#d4edda" : "#fff3cd",
+            color: matchFound ? "#155724" : "#856404",
             borderRadius: "4px",
-            cursor: canFindMatch ? "pointer" : "not-allowed",
-          }}
-        >
-          Find Match
-        </button>
-      )}
+            border: `1px solid ${matchFound ? "#c3e6cb" : "#ffeeba"}`
+          }}>
+            {statusMessage}
+          </div>
+        )}
 
-      {isSearching && (
-        <button
-          onClick={handleCancelMatch}
-          style={{
-            padding: "0.75rem 2rem",
-            fontSize: "1rem",
-            fontWeight: "bold",
-            backgroundColor: "#f44336",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          Cancel Search
-        </button>
-      )}
-    </main>
+        {matchFound && (
+          <div style={{
+            padding: "1.5rem",
+            marginBottom: "1rem",
+            backgroundColor: "#e7f3ff",
+            borderRadius: "8px",
+            border: "1px solid #b3d9ff"
+          }}>
+            <h3>Match Details</h3>
+            <p><strong>Room ID:</strong> {matchFound.roomId}</p>
+            <p><strong>Partner:</strong> {matchFound.user1.userId === user?.sub ? matchFound.user2.email : matchFound.user1.email}</p>
+            <p><strong>Difficulties:</strong> {matchFound.difficulties.join(", ")}</p>
+            <p><strong>Topics:</strong> {matchFound.topics.join(", ")}</p>
+            <p style={{ marginTop: "1rem", fontStyle: "italic" }}>Collaboration room coming soon!</p>
+          </div>
+        )}
+
+        {!isSearching && !matchFound && (
+          <button
+            onClick={handleFindMatch}
+            disabled={!canFindMatch}
+            style={{
+              padding: "0.75rem 2rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              backgroundColor: canFindMatch ? "#4CAF50" : "#ccc",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: canFindMatch ? "pointer" : "not-allowed",
+            }}
+          >
+            Find Match
+          </button>
+        )}
+
+        {isSearching && (
+          <button
+            onClick={handleCancelMatch}
+            style={{
+              padding: "0.75rem 2rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              backgroundColor: "#f44336",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Cancel Search
+          </button>
+        )}
+      </main>
+    </div>
   );
 }
