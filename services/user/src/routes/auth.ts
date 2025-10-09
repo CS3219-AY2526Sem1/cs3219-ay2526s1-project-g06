@@ -1,36 +1,49 @@
 import { Router } from "express";
 import { verifyIdToken } from "../firebase";
-import { requireSession } from "../mw/requireSession";
 
 const router = Router();
 
+// Create session after Firebase auth
 router.post("/session", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(400).json({ error: 'missing_id_token' });
+  }
+
+  const token = authHeader.split('Bearer ')[1];
+  
   try {
-    const { idToken } = req.body || {};
-    if (!idToken) return res.status(400).json({ error: "missing_id_token" });
-
-    // Verify with Admin SDK
-    const decoded = await verifyIdToken(idToken);
-    // Optional: block unverified emails while testing (comment if not needed)
-    // if (!decoded.email_verified) return res.status(403).json({ error: "email_unverified" });
-
-    res.cookie("session", idToken, {
+    const decoded = await verifyIdToken(token);
+    
+    // Set the Firebase token as session cookie
+    res.cookie('session', token, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,             // false for http://localhost; set true in prod HTTPS
-      maxAge: 7 * 24 * 3600 * 1000,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000 // 1 hour
     });
-
-    return res.sendStatus(204);
-  } catch (e: any) {
-    console.error("SESSION VERIFY FAILED:", e?.code ?? e?.message ?? e);
-    // expose a simple code so you can see it in the Network tab
-    return res.status(401).json({ error: e?.code ?? "invalid_session" });
+    
+    res.json({ 
+      user: { 
+        sub: decoded.uid, 
+        email: decoded.email 
+      } 
+    });
+  } catch (error) {
+    console.error('Session creation failed:', error);
+    res.status(401).json({ error: 'Invalid token' });
   }
 });
 
-router.get("/me", requireSession, (req, res) => {
-    res.json({ user: (req as any).user });
+// Logout endpoint
+router.post("/logout", (req, res) => {
+  res.clearCookie('session', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   });
+  res.json({ success: true });
+});
 
-export default router;
+export { router as authRouter };
