@@ -27,3 +27,5 @@ export function getFirebaseAuth() {
   }
   return fbAuth;
 }
+
+export const auth = getAuth(getFirebaseApp());
