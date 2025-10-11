@@ -21,6 +21,16 @@ services:
       - ./services/matching/.env
     restart: unless-stopped
 
+  question-service:
+    build: ./services/question
+    ports:
+      - "4003:4003"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./services/question/.env
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
