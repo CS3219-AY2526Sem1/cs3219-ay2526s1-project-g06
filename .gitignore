@@ -36,6 +36,7 @@ Thumbs.db
 # Misc
 *.tsbuildinfo
 .cache/
+*.tar.gz
 
 # Firebase credentials
 **/creds/

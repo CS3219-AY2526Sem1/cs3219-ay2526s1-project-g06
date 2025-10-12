@@ -8,9 +8,9 @@ set -e
 echo "🚀 Starting frontend deployment..."
 
 # Variables - REPLACE THESE
-S3_BUCKET="your-bucket-name"
-CLOUDFRONT_DISTRIBUTION_ID="your-distribution-id"
-REGION="us-east-1"
+S3_BUCKET="peerprep-cs3219-g06"
+CLOUDFRONT_DISTRIBUTION_ID="E1LGYQN97JEUV9"
+REGION="ap-southeast-1"
 
 # Build frontend
 echo "📦 Building frontend..."

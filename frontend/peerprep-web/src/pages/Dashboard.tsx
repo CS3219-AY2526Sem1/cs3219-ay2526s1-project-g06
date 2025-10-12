@@ -24,10 +24,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Connect to matching service via Nginx
-    socketRef.current = io("http://16.176.159.10");
-
-    // Connect to matching service - use local for development
-    // socketRef.current = io("http://localhost:4002");
+    // Note: Must use HTTP backend, so CloudFront HTTPS won't work (mixed content blocked)
+    // Use environment variable or default to current hostname
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}`;
+    socketRef.current = io(backendUrl);
 
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);
