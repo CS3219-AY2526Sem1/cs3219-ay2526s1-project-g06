@@ -1,0 +1,103 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'services/**'
+      - 'docker-compose.yml'
+      - 'nginx.conf'
+      - 'scripts/deploy-backend.sh'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/peerprep-key.pem
+          chmod 600 ~/.ssh/peerprep-key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        run: |
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+
+            echo "📂 Navigating to project directory..."
+            cd /home/ubuntu/cs3219-ay2526s1-project-g06
+
+            echo "📥 Pulling latest code from master..."
+            git fetch origin
+            git reset --hard origin/master
+
+            echo "🛑 Stopping existing containers..."
+            docker-compose down
+
+            echo "🔨 Building and starting containers..."
+            docker-compose up -d --build
+
+            echo "⏳ Waiting for services to start..."
+            sleep 10
+
+            echo "📊 Checking container status..."
+            docker-compose ps
+
+            echo "✅ Deployment complete!"
+          EOF
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying services are responding..."
+
+          # Check if services are accessible (retry up to 5 times)
+          for i in {1..5}; do
+            if curl -f -s http://${{ secrets.EC2_HOST }}/health > /dev/null 2>&1; then
+              echo "✅ Backend services are healthy!"
+              break
+            else
+              echo "⏳ Waiting for services to be ready (attempt $i/5)..."
+              sleep 5
+            fi
+          done
+
+      - name: Get service logs
+        if: always()
+        run: |
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/cs3219-ay2526s1-project-g06
+            echo "📝 Recent logs from services:"
+            docker-compose logs --tail=50
+          EOF
+
+      - name: Deployment summary
+        run: |
+          echo "## Backend Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Success :white_check_mark:" >> $GITHUB_STEP_SUMMARY
+          echo "- **EC2 Host**: ${{ secrets.EC2_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services Deployed**:" >> $GITHUB_STEP_SUMMARY
+          echo "  - User Service (Port 4001)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Matching Service (Port 4002)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Question Service (Port 4003)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Nginx Reverse Proxy (Port 80)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Endpoints" >> $GITHUB_STEP_SUMMARY
+          echo "- Health check: http://${{ secrets.EC2_HOST }}/health" >> $GITHUB_STEP_SUMMARY
+          echo "- User API: http://${{ secrets.EC2_HOST }}/user" >> $GITHUB_STEP_SUMMARY
+          echo "- Matching WebSocket: http://${{ secrets.EC2_HOST }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/peerprep-key.pem
