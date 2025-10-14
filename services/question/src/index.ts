@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
-import express, {Request, Response} from "express";
+import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import {Question} from "./models/question";
 import {sampleQuestions} from "./seed/sampleQuestions";
+import {questionRouter} from "./routes/questionRouter";
 
 dotenv.config();
 
@@ -25,7 +26,6 @@ async function connectToMongoDB() {
         await mongoose.connect(process.env.MONGO_URL as string);
         console.log("Successfully connected to MongoDB");
         const dbCount = await Question.countDocuments();
-        // seed mongoDB if empty 
         if (dbCount === 0) {
             await seedEmptyDb();
         } else {
@@ -37,7 +37,7 @@ async function connectToMongoDB() {
     }
 }
 
-// to do proper seeding in the future from codeforces
+// TODO: Proper seeding from open source
 async function seedEmptyDb() {
     try {
         console.log("DB is empty, seeding with sample questions...");
@@ -50,48 +50,9 @@ async function seedEmptyDb() {
 
 connectToMongoDB();
 
+questionApp.use("/api/question_service", questionRouter);
+
 const PORT = Number(process.env.PORT) || 4003;
 questionApp.listen(PORT, "0.0.0.0", () => {
     console.log(`Question service running on http://localhost:${PORT}`);
   });
-
-// create (admin)
-
-// read (user + admin)
-// read random qn (no topic or difficulty given)
-
-// read random qn based on topic
-
-// read random qn based on difficulty
-
-// read random qn based on topic and difficulty
-questionApp.get("/api/question_service/random/topic/:topic/difficulty/:difficulty",
-  async(req:Request, res:Response) => {
-    try {
-        const {topic, difficulty} = req.params;
-        // aggregate returns an array, so must index 0 even if its just one value
-        // can use aggregate as mongoDB inbuilt randomizer 
-        //https://stackoverflow.com/questions/2824157/how-can-i-get-a-random-record-from-mongodb
-        const matchingQuestions = await Question.aggregate([
-            {
-                $match: {
-                    topic,
-                    difficulty
-                }
-            },
-            {
-                $sample: {size: 1}    
-            }
-        ]);
-        return res.json(matchingQuestions[0]);
-    } catch(error) {
-        console.error("Failed to read a random question based on difficulty and topic: ", error);
-        return res.status(500).json({ error: "Failed"})
-    }
-  });
-// read all topics
-
-// update (admin)
-
-// delete (admin)
-
