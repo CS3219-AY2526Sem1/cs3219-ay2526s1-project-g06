@@ -7,7 +7,6 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import { authRouter } from "./routes/auth";
-import { requireSession, AuthedReq } from "./mw/requireSession";
 
 async function main() {
   // Connect to MongoDB Atlas
@@ -38,10 +37,6 @@ async function main() {
   );
 
   app.use("/auth", authRouter);
-
-  app.get("/auth/me", requireSession, (req: AuthedReq, res: Response) => {
-    res.json({ user: req.user });
-  });
 
   const port = Number(process.env.PORT) || 4001;
   app.listen(port, "0.0.0.0", () => {

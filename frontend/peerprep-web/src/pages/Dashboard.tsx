@@ -176,7 +176,7 @@ export default function Dashboard() {
 
       <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1>Welcome, {user?.email}</h1>
+          <h1>Welcome, {user?.displayName}</h1>
         </div>
 
         <div style={{ marginBottom: "2rem" }}>

@@ -62,24 +62,45 @@ UserSchema.statics.upsertFromAuth = async function ({
   displayName?: string | null;
   photoURL?: string | null;
 }) {
-  const update = {
-    $setOnInsert: { 
-      uid, 
-      createdAt: new Date(),
-      bio: "",
-      language: "",
-      profileCompleted: false
-    },
-    $set: {
-      email: email ?? null,
-      displayName: displayName ?? null,
-      photoURL: photoURL ?? null,
-      updatedAt: new Date(),
-    },
-  };
-  const options = { upsert: true, new: true };
-  const doc = await this.findOneAndUpdate({ uid }, update, options);
-  return doc as UserDoc;
+  // First, check if user already exists
+  const existingUser = await this.findOne({ uid });
+  
+  if (existingUser) {
+    // User exists - only update basic auth fields, preserve profile data
+    const update = {
+      $set: {
+        email: email ?? null,
+        photoURL: photoURL ?? null,
+        updatedAt: new Date(),
+        // Don't overwrite displayName if user has completed profile
+        ...(existingUser.profileCompleted ? {} : { displayName: displayName ?? null })
+      },
+    };
+    
+    const doc = await this.findOneAndUpdate({ uid }, update, { new: true });
+    return doc as UserDoc;
+  } else {
+    // New user - create with Firebase data
+    const update = {
+      $setOnInsert: { 
+        uid, 
+        createdAt: new Date(),
+        bio: "",
+        language: "",
+        profileCompleted: false,
+        displayName: displayName ?? null,
+        email: email ?? null,
+        photoURL: photoURL ?? null,
+      },
+      $set: {
+        updatedAt: new Date(),
+      },
+    };
+    
+    const options = { upsert: true, new: true };
+    const doc = await this.findOneAndUpdate({ uid }, update, options);
+    return doc as UserDoc;
+  }
 };
 
 UserSchema.statics.updateProfile = async function (

@@ -6,7 +6,7 @@ import { me, logout, createSession } from "../api/auth";
 type UserData = { 
   sub: string; 
   email: string;
-  displayName?: string;
+  displayName?: string;  // Make sure this is included
   bio?: string;
   language?: string;
   profileCompleted?: boolean;
@@ -46,7 +46,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const token = await firebaseUser.getIdToken();
           const response = await createSession(token);
-          setUser(response.user);
+          // Make sure to set all user data including displayName
+          setUser({
+            sub: response.user.sub,
+            email: response.user.email,
+            displayName: response.user.displayName,
+            bio: response.user.bio,
+            language: response.user.language,
+            profileCompleted: response.user.profileCompleted
+          });
           console.log('Backend session created successfully');
         } catch (error) {
           console.error('Failed to create backend session:', error);

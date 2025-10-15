@@ -68,8 +68,22 @@ export async function login(body: { email: string; password: string }) {
 export async function me() {
   const res = await fetch(`${BASE}/auth/me`, { credentials: "include" });
   if (!res.ok) return null;
-  const data = await json<{ user: { uid: string; email: string } }>(res);
-  return { sub: data.user.uid, email: data.user.email };
+  const data = await json<{ user: { 
+    uid: string; 
+    email: string;
+    displayName?: string;
+    bio?: string;
+    language?: string;
+    profileCompleted?: boolean;
+  } }>(res);
+  return { 
+    sub: data.user.uid, 
+    email: data.user.email,
+    displayName: data.user.displayName,
+    bio: data.user.bio,
+    language: data.user.language,
+    profileCompleted: data.user.profileCompleted
+  };
 }
 
 export async function deleteAccount(firebaseToken: string) {

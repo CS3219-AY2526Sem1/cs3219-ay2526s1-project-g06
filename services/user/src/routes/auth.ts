@@ -2,6 +2,7 @@ import { Router } from "express";
 import { verifyIdToken } from "../firebase";
 import User from "../models/User"; 
 import admin from "firebase-admin";
+import { requireSession } from "../mw/requireSession";
 
 const router = Router();
 
@@ -50,6 +51,11 @@ router.post("/session", async (req, res) => {
     console.error('Session creation failed:', error);
     res.status(401).json({ error: 'Invalid token' });
   }
+});
+
+router.get("/me", requireSession, (req: any, res) => {
+  console.log('GET /auth/me called, user data:', req.user); // Debug log
+  res.json({ user: req.user });
 });
 
 // NEW ENDPOINT: Update user profile
