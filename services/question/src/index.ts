@@ -4,7 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import {Question} from "./models/question";
 import {sampleQuestions} from "./seed/sampleQuestions";
-import {questionRouter} from "./routes/questionRouter";
+import {questionMainRouter} from "./routes/questionMainRouter";
 
 dotenv.config();
 
@@ -32,7 +32,7 @@ async function connectToMongoDB() {
             console.log(`DB has ${dbCount} questions`)
         }
     } catch (error) {
-        console.error("Failed to connect to MongoDB, user service shutting down");
+        console.error("Failed to connect to MongoDB, question service shutting down");
         process.exit(1);
     }
 }
@@ -42,7 +42,7 @@ async function seedEmptyDb() {
     try {
         console.log("DB is empty, seeding with sample questions...");
         await Question.insertMany(sampleQuestions);
-        console.log(`DB was successfully seeded, the DB now has has ${sampleQuestions.length} questions`);
+        console.log(`DB was successfully seeded, the DB now has ${sampleQuestions.length} questions`);
     } catch (error) {
         console.error("Failed to seed DB: ", error);
     }
@@ -50,7 +50,7 @@ async function seedEmptyDb() {
 
 connectToMongoDB();
 
-questionApp.use("/api/question_service", questionRouter);
+questionApp.use("/api/question_service", questionMainRouter);
 
 const PORT = Number(process.env.PORT) || 4003;
 questionApp.listen(PORT, "0.0.0.0", () => {
