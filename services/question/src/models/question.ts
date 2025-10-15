@@ -23,6 +23,7 @@ const questionSchema = new Schema<questionInterface>({
     },
     topic: {
         type: String,
+        required: true
     }
 });
 
