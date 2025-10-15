@@ -1,29 +1,41 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./auth/AuthContext";
-import Protected from "./auth/Protected";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import ProfileSetup from './pages/ProfileSetup'; 
+import './App.css';
 
-export default function App() {
+function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', marginTop: '2rem' }}>Loading...</div>;
+  }
+
+  // Check if user needs to complete profile setup
+  if (user && !user.profileCompleted) {
+    return <ProfileSetup />;
+  }
+
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Navigate to="/app" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/app"
-            element={
-              <Protected>
-                <Dashboard />
-              </Protected>
-            }
-          />
-          <Route path="*" element={<Navigate to="/app" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+      <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+      <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+    </Routes>
   );
 }
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+}
+
+export default App;
