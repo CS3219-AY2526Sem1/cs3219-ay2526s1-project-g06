@@ -72,6 +72,17 @@ export async function me() {
   return { sub: data.user.uid, email: data.user.email };
 }
 
+export async function deleteAccount(firebaseToken: string) {
+  const res = await fetch(`${BASE}/auth/account`, {
+    method: "DELETE",
+    headers: { 
+      "Authorization": `Bearer ${firebaseToken}`
+    },
+    credentials: "include"
+  });
+  return json<{ message: string }>(res);
+}
+
 export async function logout() {
   await fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" });
 }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { verifyIdToken } from "../firebase";
-import User from "../models/User"; // Add this import
+import User from "../models/User"; 
+import admin from "firebase-admin";
 
 const router = Router();
 
@@ -106,6 +107,50 @@ router.post("/logout", (req, res) => {
     sameSite: 'lax'
   });
   res.json({ success: true });
+});
+
+router.delete("/account", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'missing_id_token' });
+  }
+
+  const token = authHeader.split('Bearer ')[1];
+  
+  try {
+    const decoded = await verifyIdToken(token);
+    const userId = decoded.uid;
+    
+    // Delete from MongoDB first
+    const deletedUser = await User.findOneAndDelete({ uid: userId });
+    if (!deletedUser) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+    
+    // Delete from Firebase Auth
+    await admin.auth().deleteUser(userId);
+
+    // Clear session cookie
+    res.clearCookie('session', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+
+    console.log(`✅ User ${userId} deleted from both Firebase and MongoDB`);
+    res.json({ message: 'Account deleted successfully' });
+    
+  } catch (error: any) {
+    console.error('Account deletion failed:', error);
+
+    // If Firebase deletion fails but MongoDB succeeded
+    if (error.code === 'auth/user-not-found') {
+      return res.json({ message: 'Account deleted (user not found in Firebase)' });
+    }
+
+    res.status(500).json({ error: 'Account deletion failed' });
+  }
 });
 
 export { router as authRouter };

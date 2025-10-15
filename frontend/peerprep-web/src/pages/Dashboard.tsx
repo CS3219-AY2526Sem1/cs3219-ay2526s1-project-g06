@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { io, Socket } from "socket.io-client";
+import { deleteAccount } from '../api/auth';
+import { auth } from '../lib/firebase';
 
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const TOPICS = ["DP", "Math", "Linked List"];
@@ -20,6 +22,8 @@ export default function Dashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [matchFound, setMatchFound] = useState<Match | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -87,6 +91,27 @@ export default function Dashboard() {
     setStatusMessage("");
   };
 
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser) return;
+    
+    setDeletingAccount(true);
+    
+    try {
+      const token = await auth.currentUser.getIdToken();
+      await deleteAccount(token);
+      
+      // User is now deleted from both systems
+      await signOut(); // This will redirect to login
+      
+    } catch (error) {
+      console.error('Account deletion failed:', error);
+      alert('Failed to delete account. Please try again.');
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
       {/* Logo in top right */}
@@ -103,10 +128,55 @@ export default function Dashboard() {
         }}
       />
 
+      {/* Logout Button - Top Left */}
+      <div style={{ 
+        position: 'absolute', 
+        top: '1rem', 
+        left: '1rem',
+        zIndex: 10
+      }}>
+        <button
+          onClick={signOut}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* Delete Account Button - Bottom Left */}
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '1rem', 
+        left: '1rem',
+        zIndex: 10
+      }}>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}
+        >
+          Delete Account
+        </button>
+      </div>
+
       <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <h1>Welcome, {user?.email}</h1>
-          <button onClick={signOut}>Log out</button>
         </div>
 
         <div style={{ marginBottom: "2rem" }}>
@@ -208,6 +278,69 @@ export default function Dashboard() {
           </button>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            maxWidth: '400px',
+            textAlign: 'center',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ color: '#dc3545', marginBottom: '1rem' }}>Delete Account?</h3>
+            <p style={{ marginBottom: '1.5rem', color: '#666' }}>
+              This will permanently delete your account and all data from PeerPrep. 
+              This action cannot be undone.
+            </p>
+            
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deletingAccount}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: deletingAccount ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: deletingAccount ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {deletingAccount ? 'Deleting...' : 'Delete Forever'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
