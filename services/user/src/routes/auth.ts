@@ -30,8 +30,8 @@ router.post("/session", async (req, res) => {
     // Set the Firebase token as session cookie
     res.cookie('session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always use secure for cross-site cookies
+      sameSite: 'none', // Required for cross-site cookies
       maxAge: 60 * 60 * 1000 // 1 hour
     });
     
@@ -109,8 +109,8 @@ router.put("/profile", async (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie('session', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    secure: true,
+    sameSite: 'none'
   });
   res.json({ success: true });
 });
@@ -140,8 +140,8 @@ router.delete("/account", async (req, res) => {
     // Clear session cookie
     res.clearCookie('session', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      secure: true,
+      sameSite: 'none'
     });
 
     console.log(`✅ User ${userId} deleted from both Firebase and MongoDB`);
