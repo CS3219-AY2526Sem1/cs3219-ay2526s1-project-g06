@@ -82,13 +82,55 @@ export default function Login() {
         Login
       </h2>
       
+      {/* Backend Setup Notice */}
+      <div style={{
+        padding: '1rem',
+        marginBottom: '1rem',
+        backgroundColor: '#fff3cd',
+        border: '1px solid #ffc107',
+        borderRadius: '4px',
+        color: '#856404'
+      }}>
+        <p style={{ margin: '0 0 0.75rem 0', fontWeight: 'bold' }}>
+          ⚠️ First-time setup required:
+        </p>
+        <ol style={{ margin: '0 0 0.75rem 0', paddingLeft: '1.5rem' }}>
+          <li style={{ marginBottom: '0.5rem' }}>
+            <a
+              href="https://16.176.159.10/health"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#0066cc',
+                textDecoration: 'underline',
+                fontWeight: 'bold'
+              }}
+            >
+              Click here to enable backend connection
+            </a>
+          </li>
+          <li style={{ marginBottom: '0.5rem' }}>
+            Accept the security warning (click "Advanced" → "Proceed to 16.176.159.10")
+          </li>
+          <li>Close that tab and return here to login</li>
+        </ol>
+        <p style={{
+          margin: 0,
+          fontSize: '0.85rem',
+          fontStyle: 'italic'
+        }}>
+          Note: This warning exists because we're using a self-signed SSL certificate for this demo.
+          In production, we would use a proper domain with a trusted certificate.
+        </p>
+      </div>
+
       {error && (
-        <div style={{ 
-          padding: '0.75rem', 
-          marginBottom: '1rem', 
-          backgroundColor: '#f8d7da', 
-          color: '#721c24', 
-          borderRadius: '4px' 
+        <div style={{
+          padding: '0.75rem',
+          marginBottom: '1rem',
+          backgroundColor: '#f8d7da',
+          color: '#721c24',
+          borderRadius: '4px'
         }}>
           {error}
         </div>
