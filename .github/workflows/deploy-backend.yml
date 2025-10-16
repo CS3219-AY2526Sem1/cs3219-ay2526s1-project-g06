@@ -40,8 +40,11 @@ jobs:
             git reset --hard origin/master
 
             echo "📝 Updating .env files for HTTPS..."
-            sed -i 's|CORS_ORIGIN=http://localhost:5173|CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net|g' services/user/.env
-            sed -i 's|CORS_ORIGIN=http://localhost:5173|CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net|g' services/matching/.env
+            # Replace CORS_ORIGIN line entirely to avoid accumulation
+            sed -i '/^CORS_ORIGIN=/d' services/user/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
+            sed -i '/^CORS_ORIGIN=/d' services/matching/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/matching/.env
             echo "✅ .env files updated"
 
             echo "🔐 Setting up SSL certificate..."
