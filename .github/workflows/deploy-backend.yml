@@ -45,21 +45,20 @@ jobs:
             echo "✅ .env files updated"
 
             echo "🔐 Setting up SSL certificate..."
-            if [ ! -f /etc/nginx/ssl/nginx-selfsigned.crt ]; then
-              echo "Creating SSL directory and generating self-signed certificate..."
-              sudo mkdir -p /etc/nginx/ssl
-              sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout /etc/nginx/ssl/nginx-selfsigned.key \
-                -out /etc/nginx/ssl/nginx-selfsigned.crt \
+            # Create SSL directory in project folder (Docker can access this)
+            mkdir -p ssl
+            if [ ! -f ssl/nginx-selfsigned.crt ]; then
+              echo "Generating self-signed certificate..."
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                -keyout ssl/nginx-selfsigned.key \
+                -out ssl/nginx-selfsigned.crt \
                 -subj "/C=SG/ST=Singapore/L=Singapore/O=PeerPrep/CN=16.176.159.10"
+              chmod 644 ssl/nginx-selfsigned.crt
+              chmod 644 ssl/nginx-selfsigned.key
               echo "✅ SSL certificate created"
             else
               echo "✅ SSL certificate already exists"
             fi
-
-            echo "Setting correct permissions for SSL certificates..."
-            sudo chmod 644 /etc/nginx/ssl/nginx-selfsigned.crt
-            sudo chmod 644 /etc/nginx/ssl/nginx-selfsigned.key
 
             echo "🛑 Stopping existing containers..."
             docker-compose down
