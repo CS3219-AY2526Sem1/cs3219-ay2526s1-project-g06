@@ -32,8 +32,9 @@ router.post("/session", async (req, res) => {
       httpOnly: true,
       secure: true, // Always use secure for cross-site cookies
       sameSite: 'none', // Required for cross-site cookies
+      partitioned: true, // Chrome's new requirement for third-party cookies
       maxAge: 60 * 60 * 1000 // 1 hour
-    });
+    } as any); // 'as any' because TypeScript types don't have partitioned yet
     
     res.json({ 
       user: { 
