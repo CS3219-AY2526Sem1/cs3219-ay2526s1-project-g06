@@ -57,6 +57,10 @@ jobs:
               echo "✅ SSL certificate already exists"
             fi
 
+            echo "Setting correct permissions for SSL certificates..."
+            sudo chmod 644 /etc/nginx/ssl/nginx-selfsigned.crt
+            sudo chmod 644 /etc/nginx/ssl/nginx-selfsigned.key
+
             echo "🛑 Stopping existing containers..."
             docker-compose down
 
