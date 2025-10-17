@@ -17,6 +17,7 @@ questionApp.use(cors({
 
 questionApp.use(express.json());
 
+// general health check
 questionApp.get("/health", (req, res) => {
     res.json({ status: "ok", service: "question" });
   });
