@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 **/node_modules/
-package-lock.json
 
 # Environment variables
 .env
@@ -42,3 +41,7 @@ Thumbs.db
 # Firebase credentials
 **/creds/
 serviceAccount.json
+
+# Python scripts 
+*.py
+*.txt
