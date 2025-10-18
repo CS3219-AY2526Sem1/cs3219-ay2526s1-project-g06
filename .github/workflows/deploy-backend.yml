@@ -36,6 +36,8 @@ jobs:
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > firebase.json
           FIREBASE_B64=$(base64 -w 0 firebase.json)
 
+          echo "FIREBASE_B64 length: ${#FIREBASE_B64}"
+
           # Pass secrets to EC2 via environment variables
           ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
             set -e
@@ -43,8 +45,8 @@ jobs:
             # Firebase might be messing up due to quotations
             FIREBASE_B64=$(echo "${FIREBASE_SERVICE_ACCOUNT_JSON}" | base64 -w 0)
 
-            export MONGO_URL = "${MONGO_URL}"
-            export MONGO_URL_QUESTIONS = "$MONGO_URL_QUESTIONS"
+            export MONGO_URL="${MONGO_URL}"
+            export MONGO_URL_QUESTIONS="$MONGO_URL_QUESTIONS"
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
