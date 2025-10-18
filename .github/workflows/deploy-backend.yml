@@ -53,8 +53,8 @@ jobs:
 
             echo "📝 Creating .env files from GitHub Secrets..."
 
-            # Decode Firebase JSON
-            FIREBASE_JSON=\$(echo "\${FIREBASE_B64}" | base64 -d)
+            # Decode Firebase JSON and minify to single line
+            FIREBASE_JSON=\$(echo "\${FIREBASE_B64}" | base64 -d | tr -d '\n' | tr -d ' ')
 
             # User Service .env
             echo "PORT=4001" > services/user/.env
