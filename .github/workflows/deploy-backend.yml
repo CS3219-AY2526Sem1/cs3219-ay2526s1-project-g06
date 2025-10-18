@@ -51,10 +51,7 @@ jobs:
             echo "📝 Creating .env files from GitHub Secrets..."
 
             # User Service .env
-            echo "PORT=4001" > services/user/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
-            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
-            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_SERVICE_ACCOUNT_JSON}" >> services/user/.env
+            printf "PORT=4001\nCORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net\nMONGO_URL=%s\nFIREBASE_SERVICE_ACCOUNT_JSON=%s\n" "${MONGO_URL}" "${FIREBASE_SERVICE_ACCOUNT_JSON}" > services/user/.env
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
