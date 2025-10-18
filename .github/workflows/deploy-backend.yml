@@ -40,9 +40,11 @@ jobs:
           ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
             set -e
 
+            # Firebase might be messing up due to quotations
+            FIREBASE_B64=$(echo "${FIREBASE_SERVICE_ACCOUNT_JSON}" | base64 -w 0)
+
             export MONGO_URL = "${MONGO_URL}"
             export MONGO_URL_QUESTIONS = "$MONGO_URL_QUESTIONS"
-            export FIREBASE_B64 = "${FIREBASE_B64}"
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
@@ -53,14 +55,16 @@ jobs:
 
             echo "📝 Creating .env files from GitHub Secrets..."
 
-            # Decode Firebase JSON and minify to single line
-            FIREBASE_JSON=\$(echo "\${FIREBASE_B64}" | base64 -d | tr -d '\n' | tr -d ' ')
 
             # User Service .env
             echo "PORT=4001" > services/user/.env
             echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
             echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
-            echo "FIREBASE_SERVICE_ACCOUNT_JSON=\${FIREBASE_JSON}" >> services/user/.env
+            # Special Firebase handling
+            echo -n "FIREBASE_SERVICE_ACCOUNT_JSON='" >> services/user/.env
+            echo "${FIREBASE_B64}" | base64 -d | sed "s/'/'\"'\"'/g" >> services/user/.env
+            echo "'" >> services/user/.env
+
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
