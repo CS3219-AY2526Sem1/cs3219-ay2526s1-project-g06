@@ -24,7 +24,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-      <Route path="/collab" element={user ? <Collab /> : <Navigate to="/login" />} />
+      <Route path="/collab" element={<Collab />} />
       <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
     </Routes>
   );
