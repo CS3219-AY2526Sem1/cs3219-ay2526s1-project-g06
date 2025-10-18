@@ -30,11 +30,10 @@ router.post("/session", async (req, res) => {
     // Set the Firebase token as session cookie
     res.cookie('session', token, {
       httpOnly: true,
-      secure: true, // Always use secure for cross-site cookies
-      sameSite: 'none', // Required for cross-site cookies
-      partitioned: true, // Chrome's new requirement for third-party cookies
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 1000 // 1 hour
-    } as any); // 'as any' because TypeScript types don't have partitioned yet
+    });
     
     res.json({ 
       user: { 
@@ -59,7 +58,7 @@ router.get("/me", requireSession, (req: any, res) => {
   res.json({ user: req.user });
 });
 
-// NEW ENDPOINT: Update user profile
+// Update user profile
 router.put("/profile", async (req, res) => {
   const authHeader = req.headers.authorization;
   
@@ -110,8 +109,8 @@ router.put("/profile", async (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie('session', {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   });
   res.json({ success: true });
 });
@@ -141,8 +140,8 @@ router.delete("/account", async (req, res) => {
     // Clear session cookie
     res.clearCookie('session', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none'
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
     });
 
     console.log(`✅ User ${userId} deleted from both Firebase and MongoDB`);
