@@ -28,8 +28,15 @@ jobs:
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
+        env:
+          MONGO_URL: ${{ secrets.MONGO_URL }}
+          MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
         run: |
-          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          # Pass secrets to EC2 via environment variables
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            MONGO_URL="${MONGO_URL}" \
+            MONGO_URL_QUESTIONS="${MONGO_URL_QUESTIONS}" \
+            bash << 'EOF'
             set -e
 
             echo "📂 Navigating to project directory..."
@@ -39,13 +46,32 @@ jobs:
             git fetch origin
             git reset --hard origin/master
 
-            echo "📝 Updating .env files for HTTPS..."
-            # Replace CORS_ORIGIN line entirely to avoid accumulation
-            sed -i '/^CORS_ORIGIN=/d' services/user/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
-            sed -i '/^CORS_ORIGIN=/d' services/matching/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/matching/.env
-            echo "✅ .env files updated"
+            echo "📝 Creating .env files from GitHub Secrets..."
+
+            # User Service .env
+            cat > services/user/.env << 'ENVFILE'
+PORT=4001
+CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net
+MONGO_URL=${MONGO_URL}
+ENVFILE
+            echo "✓ Created services/user/.env"
+
+            # Matching Service .env
+            cat > services/matching/.env << 'ENVFILE'
+PORT=4002
+CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net
+ENVFILE
+            echo "✓ Created services/matching/.env"
+
+            # Question Service .env
+            cat > services/question/.env << 'ENVFILE'
+PORT=4003
+CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net
+MONGO_URL=${MONGO_URL_QUESTIONS}
+ENVFILE
+            echo "✓ Created services/question/.env"
+
+            echo "✅ All .env files configured from GitHub Secrets"
 
             echo "🔐 Setting up SSL certificate..."
             # Create SSL directory in project folder (Docker can access this)
