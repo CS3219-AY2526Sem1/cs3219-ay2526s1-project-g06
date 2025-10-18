@@ -31,6 +31,16 @@ services:
       - ./services/question/.env
     restart: unless-stopped
 
+  collab-service:
+    build: ./services/collab
+    ports:
+      - "4004:4004"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./services/matching/.env
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
