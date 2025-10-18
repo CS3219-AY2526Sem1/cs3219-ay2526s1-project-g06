@@ -59,17 +59,8 @@ router.get("/me", requireSession, (req: any, res) => {
 });
 
 // Update user profile
-router.put("/profile", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'missing_id_token' });
-  }
-
-  const token = authHeader.split('Bearer ')[1];
-  
+router.put("/profile", requireSession, async (req: any, res) => {
   try {
-    const decoded = await verifyIdToken(token);
     const { displayName, bio, language } = req.body;
     
     // Validate input
@@ -77,7 +68,8 @@ router.put("/profile", async (req, res) => {
       return res.status(400).json({ error: 'Bio must be 500 characters or less' });
     }
     
-    const updatedUser = await User.updateProfile(decoded.uid, {
+    // Use session user ID instead of token
+    const updatedUser = await User.updateProfile(req.user.uid, {
       displayName,
       bio,
       language
@@ -106,7 +98,7 @@ router.put("/profile", async (req, res) => {
 });
 
 // Logout endpoint
-router.post("/logout", (req, res) => {
+router.post("/logout", requireSession, (req, res) => {
   res.clearCookie('session', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -115,18 +107,9 @@ router.post("/logout", (req, res) => {
   res.json({ success: true });
 });
 
-router.delete("/account", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'missing_id_token' });
-  }
-
-  const token = authHeader.split('Bearer ')[1];
-  
+router.delete("/account", requireSession, async (req: any, res) => {
   try {
-    const decoded = await verifyIdToken(token);
-    const userId = decoded.uid;
+    const userId = req.user.uid; // Get from session, not token
     
     // Delete from MongoDB first
     const deletedUser = await User.findOneAndDelete({ uid: userId });
@@ -150,7 +133,6 @@ router.delete("/account", async (req, res) => {
   } catch (error: any) {
     console.error('Account deletion failed:', error);
 
-    // If Firebase deletion fails but MongoDB succeeded
     if (error.code === 'auth/user-not-found') {
       return res.json({ message: 'Account deleted (user not found in Firebase)' });
     }

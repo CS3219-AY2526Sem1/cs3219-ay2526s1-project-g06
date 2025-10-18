@@ -99,25 +99,18 @@ export default function Dashboard() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!auth.currentUser) return;
+  try {
+    // No Firebase token needed - uses session cookie
+    await deleteAccount();
     
-    setDeletingAccount(true);
+    // User is now deleted from both systems
+    await signOut();
     
-    try {
-      const token = await auth.currentUser.getIdToken();
-      await deleteAccount(token);
-      
-      // User is now deleted from both systems
-      await signOut(); // This will redirect to login
-      
-    } catch (error) {
-      console.error('Account deletion failed:', error);
-      alert('Failed to delete account. Please try again.');
-    } finally {
-      setDeletingAccount(false);
-      setShowDeleteConfirm(false);
-    }
-  };
+  } catch (error) {
+    console.error('Account deletion failed:', error);
+    alert('Failed to delete account. Please try again.');
+  }
+};
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>

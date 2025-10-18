@@ -86,13 +86,10 @@ export async function me() {
   };
 }
 
-export async function deleteAccount(firebaseToken: string) {
+export async function deleteAccount() {
   const res = await fetch(`${BASE}/auth/account`, {
     method: "DELETE",
-    headers: { 
-      "Authorization": `Bearer ${firebaseToken}`
-    },
-    credentials: "include"
+    credentials: "include" // Send session cookie only
   });
   return json<{ message: string }>(res);
 }
