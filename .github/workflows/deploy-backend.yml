@@ -31,10 +31,9 @@ jobs:
         env:
           MONGO_URL: ${{ secrets.MONGO_URL }}
           MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
           # Base64 encode Firebase JSON to safely pass through SSH
-          FIREBASE_B64=$(echo "${FIREBASE_SERVICE_ACCOUNT_JSON}" | base64 -w 0)
+          FIREBASE_B64=$(echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" | base64 -w 0)
 
           # Pass secrets to EC2 via environment variables
           ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
