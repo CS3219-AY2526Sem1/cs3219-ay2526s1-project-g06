@@ -49,26 +49,20 @@ jobs:
             echo "📝 Creating .env files from GitHub Secrets..."
 
             # User Service .env
-            cat > services/user/.env << 'ENVFILE'
-PORT=4001
-CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net
-MONGO_URL=${MONGO_URL}
-ENVFILE
+            echo "PORT=4001" > services/user/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
+            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
-            cat > services/matching/.env << 'ENVFILE'
-PORT=4002
-CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net
-ENVFILE
+            echo "PORT=4002" > services/matching/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/matching/.env
             echo "✓ Created services/matching/.env"
 
             # Question Service .env
-            cat > services/question/.env << 'ENVFILE'
-PORT=4003
-CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net
-MONGO_URL=${MONGO_URL_QUESTIONS}
-ENVFILE
+            echo "PORT=4003" > services/question/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/question/.env
+            echo "MONGO_URL=\${MONGO_URL_QUESTIONS}" >> services/question/.env
             echo "✓ Created services/question/.env"
 
             echo "✅ All .env files configured from GitHub Secrets"
