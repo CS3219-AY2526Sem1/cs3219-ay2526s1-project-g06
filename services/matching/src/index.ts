@@ -11,7 +11,6 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  path: "/matching/socket.io/",
   cors: {
     origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
