@@ -4,6 +4,8 @@ import { io, Socket } from "socket.io-client";
 import { deleteAccount } from '../api/auth';
 import { auth } from '../lib/firebase';
 
+import { useNavigate } from 'react-router-dom';
+
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const TOPICS = ["DP", "Math", "Linked List"];
 
@@ -25,6 +27,11 @@ export default function Dashboard() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+
+  const navigate = useNavigate();
+  const goCollab = () => {
+    navigate('/collab');
+  };
 
   useEffect(() => {
     // Connect to matching service via Nginx
@@ -277,6 +284,20 @@ export default function Dashboard() {
             Cancel Search
           </button>
         )}
+          <button
+            onClick={goCollab}
+            style={{
+              padding: "0.75rem 2rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              backgroundColor: canFindMatch ? "#4CAF50" : "#ccc",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+            }}
+          >
+            Collab
+          </button>
       </main>
 
       {/* Delete Confirmation Modal */}
