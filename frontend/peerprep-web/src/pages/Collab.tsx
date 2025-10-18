@@ -8,7 +8,7 @@ const CollabComponent = () => {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_SERVER_URL);
+    const socket = io(SOCKET_SERVER_URL, {path: "/collab/socket.io/",});
     socketRef.current = socket;
     
     socket.on('codespace change', (text: string) => {

@@ -38,7 +38,7 @@ export default function Dashboard() {
     // Note: Must use HTTP backend, so CloudFront HTTPS won't work (mixed content blocked)
     // Use environment variable or default to current hostname
     const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}`;
-    socketRef.current = io(backendUrl);
+    socketRef.current = io(backendUrl, {path: "/matching/socket.io/",});
 
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);
