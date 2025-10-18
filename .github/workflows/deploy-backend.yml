@@ -37,12 +37,12 @@ jobs:
           FIREBASE_B64=$(echo "${FIREBASE_SERVICE_ACCOUNT_JSON}" | base64 -w 0)
 
           # Pass secrets to EC2 via environment variables
-          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            MONGO_URL="${MONGO_URL}" \
-            MONGO_URL_QUESTIONS="${MONGO_URL_QUESTIONS}" \
-            FIREBASE_B64="${FIREBASE_B64}" \
-            bash << EOF
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
             set -e
+
+            export MONGO_URL = "${MONGO_URL}"
+            export MONGO_URL_QUESTIONS = "$MONGO_URL_QUESTIONS"
+            export FIREBASE_B64 = "${FIREBASE_B64}"
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
