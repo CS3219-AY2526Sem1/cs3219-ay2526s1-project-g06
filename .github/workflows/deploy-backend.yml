@@ -33,11 +33,14 @@ jobs:
           MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
+          # Base64 encode Firebase JSON to safely pass through SSH
+          FIREBASE_B64=$(echo "${FIREBASE_SERVICE_ACCOUNT_JSON}" | base64 -w 0)
+
           # Pass secrets to EC2 via environment variables
           ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
             MONGO_URL="${MONGO_URL}" \
             MONGO_URL_QUESTIONS="${MONGO_URL_QUESTIONS}" \
-            FIREBASE_SERVICE_ACCOUNT_JSON="${FIREBASE_SERVICE_ACCOUNT_JSON}" \
+            FIREBASE_B64="${FIREBASE_B64}" \
             bash << EOF
             set -e
 
@@ -50,8 +53,14 @@ jobs:
 
             echo "📝 Creating .env files from GitHub Secrets..."
 
+            # Decode Firebase JSON
+            FIREBASE_JSON=\$(echo "\${FIREBASE_B64}" | base64 -d)
+
             # User Service .env
-            printf "PORT=4001\nCORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net\nMONGO_URL=%s\nFIREBASE_SERVICE_ACCOUNT_JSON=%s\n" "${MONGO_URL}" "${FIREBASE_SERVICE_ACCOUNT_JSON}" > services/user/.env
+            echo "PORT=4001" > services/user/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
+            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=\${FIREBASE_JSON}" >> services/user/.env
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
