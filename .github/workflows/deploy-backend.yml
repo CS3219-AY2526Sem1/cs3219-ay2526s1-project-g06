@@ -31,11 +31,13 @@ jobs:
         env:
           MONGO_URL: ${{ secrets.MONGO_URL }}
           MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
           # Pass secrets to EC2 via environment variables
           ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
             MONGO_URL="${MONGO_URL}" \
             MONGO_URL_QUESTIONS="${MONGO_URL_QUESTIONS}" \
+            FIREBASE_SERVICE_ACCOUNT_JSON="${FIREBASE_SERVICE_ACCOUNT_JSON}" \
             bash << EOF
             set -e
 
@@ -52,6 +54,7 @@ jobs:
             echo "PORT=4001" > services/user/.env
             echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
             echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_SERVICE_ACCOUNT_JSON}" >> services/user/.env
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
