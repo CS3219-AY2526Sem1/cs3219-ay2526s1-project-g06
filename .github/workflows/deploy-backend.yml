@@ -51,7 +51,7 @@ jobs:
             # User Service .env
             echo "PORT=4001" > services/user/.env
             echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
-            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
+            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
@@ -62,7 +62,7 @@ jobs:
             # Question Service .env
             echo "PORT=4003" > services/question/.env
             echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/question/.env
-            echo "MONGO_URL=\${MONGO_URL_QUESTIONS}" >> services/question/.env
+            echo "MONGO_URL=${MONGO_URL_QUESTIONS}" >> services/question/.env
             echo "✓ Created services/question/.env"
 
             echo "✅ All .env files configured from GitHub Secrets"
