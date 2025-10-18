@@ -159,4 +159,24 @@ router.delete("/account", async (req, res) => {
   }
 });
 
+// Internal endpoint for other services to verify sessions
+router.post("/verify-session", requireSession, (req: any, res) => {
+  console.log('🔍 Session verification called for user:', req.user.uid);
+  
+  // This endpoint is only called by other backend services
+  res.json({ 
+    valid: true, 
+    user: {
+      uid: req.user.uid,
+      email: req.user.email,
+      displayName: req.user.displayName,
+      photoURL: req.user.photoURL,
+      role: req.user.role,
+      bio: req.user.bio,
+      language: req.user.language,
+      profileCompleted: req.user.profileCompleted
+    }
+  });
+});
+
 export { router as authRouter };
