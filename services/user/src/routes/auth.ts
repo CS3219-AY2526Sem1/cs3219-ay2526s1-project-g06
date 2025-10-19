@@ -18,6 +18,11 @@ router.post("/session", async (req, res) => {
   
   try {
     const decoded = await verifyIdToken(token);
+
+    // Validate that email exists
+    if (!decoded.email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
     
     // Save/update user in MongoDB on each login
     const user = await User.upsertFromAuth({
@@ -51,7 +56,7 @@ router.post("/session", async (req, res) => {
         role: user.role,
         bio: user.bio,
         language: user.language,
-        profileCompleted: user.profileCompleted
+        profileCompleted: user.profileCompleted ?? false
       } 
     });
   } catch (error) {
@@ -61,8 +66,13 @@ router.post("/session", async (req, res) => {
 });
 
 router.get("/me", requireSession, (req: any, res) => {
-  console.log('GET /auth/me called, user data:', req.user); // Debug log
-  res.json({ user: req.user });
+  console.log('GET /auth/me called, user data:', req.user);
+  res.json({ 
+    user: {
+      ...req.user,
+      profileCompleted: req.user.profileCompleted ?? false // Ensure it's never undefined
+    }
+  });
 });
 
 // Update user profile
@@ -163,7 +173,7 @@ router.post("/verify-session", requireSession, (req: any, res) => {
       role: req.user.role,
       bio: req.user.bio,
       language: req.user.language,
-      profileCompleted: req.user.profileCompleted
+      profileCompleted: req.user.profileCompleted ?? false
     }
   });
 });

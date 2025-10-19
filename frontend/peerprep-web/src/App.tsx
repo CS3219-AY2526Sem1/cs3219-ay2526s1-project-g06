@@ -15,11 +15,13 @@ function AppRoutes() {
   }
 
   // Debug: Log user profileCompleted status
-  console.log('App.tsx - User profile status:', {
-    user: user?.email,
-    profileCompleted: user?.profileCompleted,
-    type: typeof user?.profileCompleted
-  });
+  if (user && user.profileCompleted !== undefined) {
+    console.log('App.tsx - User profile status:', {
+      user: user.email,
+      profileCompleted: user.profileCompleted,
+      type: typeof user.profileCompleted
+    });
+  }
 
   // Check if user needs to complete profile setup
   if (user && !user.profileCompleted) {
