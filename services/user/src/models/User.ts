@@ -58,8 +58,7 @@ userSchema.statics.upsertFromAuth = async function(authData: {
         { uid: authData.uid },
         {
           email: authData.email,
-          displayName: authData.displayName,
-          photoURL: authData.photoURL,
+          photoURL: authData.photoURL || null,
         },
         { new: true }
       );
@@ -69,7 +68,7 @@ userSchema.statics.upsertFromAuth = async function(authData: {
         uid: authData.uid,
         email: authData.email,
         displayName: authData.displayName,
-        photoURL: authData.photoURL,
+        photoURL: authData.photoURL || null,
         role: 'user',
         profileCompleted: false, // Explicitly set to false
       });
