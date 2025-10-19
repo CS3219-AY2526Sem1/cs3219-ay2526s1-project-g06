@@ -76,8 +76,14 @@ router.get("/me", requireSession, (req: any, res) => {
   console.log('GET /auth/me called, user data:', req.user);
   res.json({ 
     user: {
-      ...req.user,
-      profileCompleted: req.user.profileCompleted ?? false // Ensure it's never undefined
+      sub: req.user.uid,
+      email: req.user.email,
+      displayName: req.user.displayName,
+      photoURL: req.user.photoURL, // Add this line
+      role: req.user.role,
+      bio: req.user.bio,
+      language: req.user.language,
+      profileCompleted: req.user.profileCompleted ?? false
     }
   });
 });
@@ -87,22 +93,25 @@ router.put("/profile", requireSession, async (req: any, res) => {
   try {
     const { displayName, bio, language } = req.body;
     
-    // Validate input
-    if (bio && bio.length > 500) {
-      return res.status(400).json({ error: 'Bio must be 500 characters or less' });
-    }
-    
-    // Use session user ID instead of token
-    const updatedUser = await User.updateProfile(req.user.uid, {
-      displayName,
-      bio,
-      language
-    });
-    
+    console.log('PUT /auth/profile - Update request:', { displayName, bio, language });
+
+    const updatedUser = await User.findOneAndUpdate(
+      { uid: req.user.uid },
+      {
+        displayName: displayName?.trim(),
+        bio: bio?.trim(),
+        language: language?.trim(),
+        profileCompleted: true
+      },
+      { new: true }
+    );
+
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
+    console.log('Profile updated successfully:', updatedUser);
+
     res.json({
       user: {
         sub: updatedUser.uid,
@@ -116,8 +125,8 @@ router.put("/profile", requireSession, async (req: any, res) => {
       }
     });
   } catch (error) {
-    console.error('Profile update failed:', error);
-    res.status(500).json({ error: 'Profile update failed' });
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

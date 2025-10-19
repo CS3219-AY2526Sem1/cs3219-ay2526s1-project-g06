@@ -7,6 +7,7 @@ type UserData = {
   sub: string; 
   email: string;
   displayName?: string;  // Make sure this is included
+  photoURL?: string;
   bio?: string;
   language?: string;
   profileCompleted?: boolean;
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             sub: response.user.sub,
             email: response.user.email,
             displayName: response.user.displayName,
+            photoURL: response.user.photoURL,
             bio: response.user.bio,
             language: response.user.language,
             profileCompleted: response.user.profileCompleted ?? false

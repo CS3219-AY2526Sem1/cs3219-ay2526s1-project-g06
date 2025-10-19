@@ -131,13 +131,42 @@ export default function Dashboard() {
         }}
       />
 
-      {/* Logout Button - Top Left */}
+      {/* Top Left Buttons - Profile and Logout */}
       <div style={{ 
         position: 'absolute', 
         top: '1rem', 
         left: '1rem',
-        zIndex: 10
+        zIndex: 10,
+        display: 'flex',
+        gap: '0.5rem'
       }}>
+        <button 
+          onClick={() => navigate('/profile')}
+          style={{
+            background: '#f3f4f6',
+            color: '#374151',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => {
+            const target = e.target as HTMLElement;
+            target.style.background = '#e5e7eb';
+            target.style.transform = 'translateY(-1px)';
+          }}
+          onMouseOut={(e) => {
+            const target = e.target as HTMLElement;
+            target.style.background = '#f3f4f6';
+            target.style.transform = 'translateY(0)';
+          }}
+        >
+          Profile
+        </button>
+
         <button
           onClick={signOut}
           style={{
