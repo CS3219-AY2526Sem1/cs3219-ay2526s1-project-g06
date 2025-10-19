@@ -31,6 +31,8 @@ jobs:
         env:
           MONGO_URL: ${{ secrets.MONGO_URL }}
           MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
+          CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
         run: |
           # Base64 encode Firebase JSON to safely pass through SSH
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > firebase.json
@@ -47,6 +49,8 @@ jobs:
 
             export MONGO_URL="${MONGO_URL}"
             export MONGO_URL_QUESTIONS="$MONGO_URL_QUESTIONS"
+            export CORS_ORIGIN="${CORS_ORIGIN}"
+            export NODE_ENV="${NODE_ENV}"
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
@@ -60,8 +64,9 @@ jobs:
 
             # User Service .env
             echo "PORT=4001" > services/user/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/user/.env
-            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
+            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
             # Special Firebase handling
             echo -n "FIREBASE_SERVICE_ACCOUNT_JSON='" >> services/user/.env
             echo "${FIREBASE_B64}" | base64 -d | sed "s/'/'\"'\"'/g" >> services/user/.env
@@ -71,18 +76,21 @@ jobs:
 
             # Matching Service .env
             echo "PORT=4002" > services/matching/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/matching/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/matching/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/matching/.env
             echo "✓ Created services/matching/.env"
 
             # Question Service .env
             echo "PORT=4003" > services/question/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/question/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/question/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/question/.env
             echo "MONGO_URL=${MONGO_URL_QUESTIONS}" >> services/question/.env
             echo "✓ Created services/question/.env"
 
             # Collaboration Service .env
             echo "PORT=4004" > services/collab/.env
-            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/collab/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/collab/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
 
             echo "✅ All .env files configured from GitHub Secrets"
