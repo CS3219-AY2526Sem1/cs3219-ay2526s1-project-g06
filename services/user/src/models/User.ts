@@ -1,134 +1,106 @@
-import {
-  Schema,
-  model,
-  models,
-  type Model,
-  type InferSchemaType,
-} from "mongoose";
+import mongoose, { Document, Schema, Model } from "mongoose";
 
-const UserSchema = new Schema(
-  {
-    uid: { type: String, required: true, unique: true, index: true },
-    email: { type: String, index: true, sparse: true },
-    displayName: { type: String },
-    photoURL: { type: String },
-    role: { type: String, enum: ["user", "admin"], default: "user" },
-    
-    bio: { type: String, default: "", maxlength: 500 },
-    language: { type: String, default: "" },
-    profileCompleted: { type: Boolean, default: false }, 
-  },
-  {
-    collection: "users",
-    timestamps: true, 
-    versionKey: false,
-    toJSON: {
-      virtuals: true, 
-      transform: (_doc, ret) => {
-        delete (ret as any)._id;
-      },
-    },
-  }
-);
-
-export type UserDoc = InferSchemaType<typeof UserSchema> & {
+export interface IUser extends Document {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  role: string;
+  bio?: string;
+  language?: string;
+  profileCompleted: boolean; // Add this field
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
-export interface IUserModel extends Model<UserDoc> {
-  upsertFromAuth(args: {
+// Add interface for static methods
+interface IUserModel extends Model<IUser> {
+  upsertFromAuth(authData: {
     uid: string;
-    email?: string | null;
-    displayName?: string | null;
-    photoURL?: string | null;
-  }): Promise<UserDoc>;
+    email: string;
+    displayName?: string;
+    photoURL?: string;
+  }): Promise<IUser>;
   
   updateProfile(uid: string, profileData: {
     displayName?: string;
     bio?: string;
     language?: string;
-  }): Promise<UserDoc | null>;
+  }): Promise<IUser | null>;
 }
 
-UserSchema.statics.upsertFromAuth = async function ({
-  uid,
-  email,
-  displayName,
-  photoURL,
-}: {
+const userSchema: Schema = new Schema({
+  uid: { type: String, required: true, unique: true },
+  email: { type: String, required: true },
+  displayName: { type: String },
+  photoURL: { type: String },
+  role: { type: String, default: 'user' },
+  bio: { type: String },
+  language: { type: String },
+  profileCompleted: { type: Boolean, default: false }, // Add this line
+}, {
+  timestamps: true
+});
+
+// Update your existing upsertFromAuth method
+userSchema.statics.upsertFromAuth = async function(authData: {
   uid: string;
-  email?: string | null;
-  displayName?: string | null;
-  photoURL?: string | null;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
 }) {
-  // First, check if user already exists
-  const existingUser = await this.findOne({ uid });
-  
-  if (existingUser) {
-    // User exists - only update basic auth fields, preserve profile data
-    const update = {
-      $set: {
-        email: email ?? null,
-        photoURL: photoURL ?? null,
-        updatedAt: new Date(),
-        // Don't overwrite displayName if user has completed profile
-        ...(existingUser.profileCompleted ? {} : { displayName: displayName ?? null }),
-        // Migration: Set default values for fields that might be missing on old users
-        ...(existingUser.bio === undefined ? { bio: "" } : {}),
-        ...(existingUser.language === undefined ? { language: "" } : {}),
-        ...(existingUser.profileCompleted === undefined ? { profileCompleted: false } : {}),
-      },
-    };
-
-    const doc = await this.findOneAndUpdate({ uid }, update, { new: true });
-    return doc as UserDoc;
-  } else {
-    // New user - create with Firebase data
-    const update = {
-      $setOnInsert: { 
-        uid, 
-        createdAt: new Date(),
-        bio: "",
-        language: "",
-        profileCompleted: false,
-        displayName: displayName ?? null,
-        email: email ?? null,
-        photoURL: photoURL ?? null,
-      },
-      $set: {
-        updatedAt: new Date(),
-      },
-    };
+  try {
+    const existingUser = await this.findOne({ uid: authData.uid });
     
-    const options = { upsert: true, new: true };
-    const doc = await this.findOneAndUpdate({ uid }, update, options);
-    return doc as UserDoc;
+    if (existingUser) {
+      // Update existing user but preserve profileCompleted
+      return await this.findOneAndUpdate(
+        { uid: authData.uid },
+        {
+          email: authData.email,
+          displayName: authData.displayName,
+          photoURL: authData.photoURL,
+        },
+        { new: true }
+      );
+    } else {
+      // Create new user with explicit profileCompleted: false
+      const newUser = await this.create({
+        uid: authData.uid,
+        email: authData.email,
+        displayName: authData.displayName,
+        photoURL: authData.photoURL,
+        role: 'user',
+        profileCompleted: false, // Explicitly set to false
+      });
+      return newUser;
+    }
+  } catch (error) {
+    console.error('Error in upsertFromAuth:', error);
+    throw error;
   }
 };
 
-UserSchema.statics.updateProfile = async function (
-  uid: string, 
-  profileData: {
-    displayName?: string;
-    bio?: string;
-    language?: string;
-  }
-) {
-  const doc = await this.findOneAndUpdate(
-    { uid },
-    { 
-      $set: {
+// Update your existing updateProfile method
+userSchema.statics.updateProfile = async function(uid: string, profileData: {
+  displayName?: string;
+  bio?: string;
+  language?: string;
+}) {
+  try {
+    return await this.findOneAndUpdate(
+      { uid },
+      {
         ...profileData,
-        profileCompleted: true,
-        updatedAt: new Date()
-      }
-    },
-    { new: true }
-  );
-  return doc as UserDoc | null;
+        profileCompleted: true, // Set to true when profile is completed
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error in updateProfile:', error);
+    throw error;
+  }
 };
 
-const User = (models.User || model("User", UserSchema)) as any as IUserModel;
-
+const User = mongoose.model<IUser, IUserModel>('User', userSchema);
 export default User;

@@ -15,29 +15,33 @@ export async function requireSession(req: any, res: any, next: any) {
     const decoded = await verifyIdToken(token);
     
     // Get full user data from MongoDB (including displayName, bio, etc.)
-    const user = await User.findOne({ uid: decoded.uid });
+    let user = await User.findOne({ uid: decoded.uid });
     
-    if (user) {
-      // Attach complete user data to request
-      req.user = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        role: user.role,
-        bio: user.bio,
-        language: user.language,
-        profileCompleted: user.profileCompleted
-      };
-    } else {
-      // Fallback to Firebase data if no MongoDB user found
-      req.user = {
+    if (!user) {
+      // If user doesn't exist in MongoDB, create them
+      console.log(`Creating user in MongoDB: ${decoded.uid}`);
+      user = await User.create({
         uid: decoded.uid,
-        email: decoded.email,
-        displayName: decoded.name
-      };
-    }
+        email: decoded.email || `${decoded.uid}@unknown.com`,
+        displayName: decoded.name,
+        photoURL: decoded.picture,
+        role: 'user',
+        profileCompleted: false, // Explicitly set to false
+      });
+    } 
+
+      req.user = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      role: user.role,
+      bio: user.bio,
+      language: user.language,
+      profileCompleted: user.profileCompleted ?? false // Ensure it's never undefined
+    };
     
+    console.log(`✅ Session verified for user: ${req.user.uid}, profileCompleted: ${req.user.profileCompleted}`);
     next();
   } catch (error) {
     res.clearCookie('session');
