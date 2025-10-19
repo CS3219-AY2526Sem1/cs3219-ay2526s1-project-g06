@@ -28,18 +28,17 @@ export async function createSession(firebaseToken: string) {
 }
 
 // Update user profile
-export async function updateProfile(firebaseToken: string, profileData: {
+export async function updateProfile(profileData: {
   displayName?: string;
   bio?: string;
   language?: string;
 }) {
   const res = await fetch(`${BASE}/auth/profile`, {
     method: "PUT",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${firebaseToken}`
+    headers: {
+      "Content-Type": "application/json"
     },
-    credentials: "include",
+    credentials: "include", // Send session cookie
     body: JSON.stringify(profileData)
   });
   return json<{ user: any }>(res);

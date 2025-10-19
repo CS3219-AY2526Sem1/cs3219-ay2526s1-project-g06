@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { updateProfile } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../lib/firebase';
 
 export default function ProfileSetup() {
   const [formData, setFormData] = useState({
@@ -21,14 +20,7 @@ export default function ProfileSetup() {
     setError('');
 
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        setError('No authenticated user found');
-        return;
-      }
-
-      const token = await currentUser.getIdToken();
-      const response = await updateProfile(token, formData);
+      const response = await updateProfile(formData);
       
       // Update user context with new profile data
       setUser({
