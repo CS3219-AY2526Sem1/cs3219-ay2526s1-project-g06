@@ -73,10 +73,14 @@ UserSchema.statics.upsertFromAuth = async function ({
         photoURL: photoURL ?? null,
         updatedAt: new Date(),
         // Don't overwrite displayName if user has completed profile
-        ...(existingUser.profileCompleted ? {} : { displayName: displayName ?? null })
+        ...(existingUser.profileCompleted ? {} : { displayName: displayName ?? null }),
+        // Migration: Set default values for fields that might be missing on old users
+        ...(existingUser.bio === undefined ? { bio: "" } : {}),
+        ...(existingUser.language === undefined ? { language: "" } : {}),
+        ...(existingUser.profileCompleted === undefined ? { profileCompleted: false } : {}),
       },
     };
-    
+
     const doc = await this.findOneAndUpdate({ uid }, update, { new: true });
     return doc as UserDoc;
   } else {
