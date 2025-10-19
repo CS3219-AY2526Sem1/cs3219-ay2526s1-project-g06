@@ -14,6 +14,13 @@ function AppRoutes() {
     return <div style={{ textAlign: 'center', marginTop: '2rem' }}>Loading...</div>;
   }
 
+  // Debug: Log user profileCompleted status
+  console.log('App.tsx - User profile status:', {
+    user: user?.email,
+    profileCompleted: user?.profileCompleted,
+    type: typeof user?.profileCompleted
+  });
+
   // Check if user needs to complete profile setup
   if (user && !user.profileCompleted) {
     return <ProfileSetup />;

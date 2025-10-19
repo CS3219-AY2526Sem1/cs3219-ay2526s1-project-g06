@@ -26,7 +26,14 @@ router.post("/session", async (req, res) => {
       displayName: decoded.name,
       photoURL: decoded.picture,
     });
-    
+
+    console.log('✅ Session created for user:', {
+      uid: user.uid,
+      email: user.email,
+      profileCompleted: user.profileCompleted,
+      type: typeof user.profileCompleted
+    });
+
     // Set the Firebase token as session cookie
     res.cookie('session', token, {
       httpOnly: true,
@@ -34,7 +41,7 @@ router.post("/session", async (req, res) => {
       sameSite: 'lax',
       maxAge: 60 * 60 * 1000 // 1 hour
     });
-    
+
     res.json({ 
       user: { 
         sub: decoded.uid, 
