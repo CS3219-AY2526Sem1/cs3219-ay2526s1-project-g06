@@ -4,9 +4,30 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = createServer(app);
+
+// Configure CORS based on environment
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return [
+      process.env.CORS_ORIGIN,
+      'https://d34n3c7d9pxc7j.cloudfront.net'
+    ].filter(Boolean);
+  } else {
+    // Development origins
+    return [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174'
+    ];
+  }
+};
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: getCorsOrigins(),
     credentials: true,
   },
   path: "/collab/socket.io/",

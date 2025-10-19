@@ -28,7 +28,49 @@ async function main() {
 
   app.use(helmet());
   app.use(morgan("dev"));
-  app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
+
+  // Configure CORS based on environment
+  const corsOptions = {
+    credentials: true,
+    origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean | string | string[]) => void) {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+
+      // In production, use the configured CORS_ORIGIN
+      if (process.env.NODE_ENV === 'production') {
+        const allowedOrigins = [
+          process.env.CORS_ORIGIN, // CloudFront URL
+          'https://d34n3c7d9pxc7j.cloudfront.net' // Hardcoded fallback
+        ].filter(Boolean);
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`⚠️ CORS blocked origin: ${origin}`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      } else {
+        // In development, allow common local origins
+        const allowedOrigins = [
+          'http://localhost:3000',
+          'http://localhost:5173',
+          'http://localhost:5174',
+          'http://127.0.0.1:3000',
+          'http://127.0.0.1:5173',
+          'http://127.0.0.1:5174'
+        ];
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`⚠️ CORS blocked origin in dev: ${origin}`);
+          callback(null, true); // Be permissive in dev
+        }
+      }
+    }
+  };
+
+  app.use(cors(corsOptions));
   app.use(express.json());
   app.use(cookieParser());
 
