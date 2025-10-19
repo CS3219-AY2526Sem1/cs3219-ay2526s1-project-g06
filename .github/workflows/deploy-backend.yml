@@ -42,7 +42,7 @@ jobs:
             CORS_ORIGIN="${CORS_ORIGIN}" \
             NODE_ENV="${NODE_ENV}" \
             FIREBASE_JSON="${FIREBASE_JSON}" \
-            bash << 'EOF'
+            bash << EOF
             set -e
 
             echo "📂 Navigating to project directory..."
@@ -57,30 +57,30 @@ jobs:
 
             # User Service .env
             echo "PORT=4001" > services/user/.env
-            echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
-            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
-            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
-            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/user/.env
+            echo "NODE_ENV=\${NODE_ENV}" >> services/user/.env
+            echo "CORS_ORIGIN=\${CORS_ORIGIN}" >> services/user/.env
+            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=\${FIREBASE_JSON}" >> services/user/.env
 
             echo "✓ Created services/user/.env"
 
             # Matching Service .env
             echo "PORT=4002" > services/matching/.env
-            echo "NODE_ENV=${NODE_ENV}" >> services/matching/.env
-            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/matching/.env
+            echo "NODE_ENV=\${NODE_ENV}" >> services/matching/.env
+            echo "CORS_ORIGIN=\${CORS_ORIGIN}" >> services/matching/.env
             echo "✓ Created services/matching/.env"
 
             # Question Service .env
             echo "PORT=4003" > services/question/.env
-            echo "NODE_ENV=${NODE_ENV}" >> services/question/.env
-            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/question/.env
-            echo "MONGO_URL=${MONGO_URL_QUESTIONS}" >> services/question/.env
+            echo "NODE_ENV=\${NODE_ENV}" >> services/question/.env
+            echo "CORS_ORIGIN=\${CORS_ORIGIN}" >> services/question/.env
+            echo "MONGO_URL=\${MONGO_URL_QUESTIONS}" >> services/question/.env
             echo "✓ Created services/question/.env"
 
             # Collaboration Service .env
             echo "PORT=4004" > services/collab/.env
-            echo "NODE_ENV=${NODE_ENV}" >> services/collab/.env
-            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
+            echo "NODE_ENV=\${NODE_ENV}" >> services/collab/.env
+            echo "CORS_ORIGIN=\${CORS_ORIGIN}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
 
             echo "✅ All .env files configured from GitHub Secrets"
