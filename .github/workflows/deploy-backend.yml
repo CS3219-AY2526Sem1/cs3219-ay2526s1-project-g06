@@ -33,24 +33,17 @@ jobs:
           MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
           CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
           NODE_ENV: ${{ secrets.NODE_ENV }}
+          FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
-          # Base64 encode Firebase JSON to safely pass through SSH
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > firebase.json
-          FIREBASE_B64=$(base64 -w 0 firebase.json)
-
-          echo "FIREBASE_B64 length: ${#FIREBASE_B64}"
-
           # Pass secrets to EC2 via environment variables
           ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
             set -e
-
-            # Firebase might be messing up due to quotations
-            FIREBASE_B64=$(echo "${FIREBASE_SERVICE_ACCOUNT_JSON}" | base64 -w 0)
 
             export MONGO_URL="${MONGO_URL}"
             export MONGO_URL_QUESTIONS="$MONGO_URL_QUESTIONS"
             export CORS_ORIGIN="${CORS_ORIGIN}"
             export NODE_ENV="${NODE_ENV}"
+            export FIREBASE_JSON='${FIREBASE_JSON}'
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
@@ -67,10 +60,8 @@ jobs:
             echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
             echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
-            # Special Firebase handling
-            echo -n "FIREBASE_SERVICE_ACCOUNT_JSON='" >> services/user/.env
-            echo "${FIREBASE_B64}" | base64 -d | sed "s/'/'\"'\"'/g" >> services/user/.env
-            echo "'" >> services/user/.env
+            # Write Firebase JSON as single-line minified JSON (no newlines)
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON='${FIREBASE_JSON}'" >> services/user/.env
 
             echo "✓ Created services/user/.env"
 
