@@ -82,7 +82,7 @@ async function main() {
 
   const port = Number(process.env.PORT) || 4001;
   app.listen(port, "0.0.0.0", () => {
-    console.log(`🚀 User service running on http://localhost:${port}`);
+    console.log(`🚀 User service v1.0.2 running on http://localhost:${port}`);
   });
 }
 

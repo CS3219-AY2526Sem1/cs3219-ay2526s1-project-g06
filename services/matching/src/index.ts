@@ -12,12 +12,12 @@ const app = express();
 const httpServer = createServer(app);
 
 // Configure CORS based on environment
-const getCorsOrigins = () => {
+const getCorsOrigins = (): string[] => {
   if (process.env.NODE_ENV === 'production') {
-    return [
-      process.env.CORS_ORIGIN,
-      'https://d34n3c7d9pxc7j.cloudfront.net'
-    ].filter(Boolean);
+    const origins: string[] = [];
+    if (process.env.CORS_ORIGIN) origins.push(process.env.CORS_ORIGIN);
+    origins.push('https://d34n3c7d9pxc7j.cloudfront.net');
+    return origins;
   } else {
     // Development origins
     return [
