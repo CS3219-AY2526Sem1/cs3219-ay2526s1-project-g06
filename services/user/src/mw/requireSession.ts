@@ -52,7 +52,7 @@ export async function requireSession(req: any, res: any, next: any) {
     res.clearCookie('session', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
       path: '/'
     });
     return res.status(401).json({ error: "session_expired" });

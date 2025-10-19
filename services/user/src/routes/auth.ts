@@ -40,10 +40,10 @@ router.post("/session", async (req, res) => {
     });
 
     // Set the Firebase token as session cookie
-    const cookieOptions = {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
       path: '/',
       maxAge: 60 * 60 * 1000 // 1 hour
     };
@@ -126,7 +126,7 @@ router.post("/logout", requireSession, (req, res) => {
   res.clearCookie('session', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
     path: '/'
   });
   res.json({ success: true });
@@ -149,7 +149,7 @@ router.delete("/account", requireSession, async (req: any, res) => {
     res.clearCookie('session', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
       path: '/'
     });
 
