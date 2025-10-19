@@ -38,7 +38,7 @@ services:
     environment:
       - NODE_ENV=production
     env_file:
-      - ./services/matching/.env
+      - ./services/collab/.env
     restart: unless-stopped
 
   nginx:

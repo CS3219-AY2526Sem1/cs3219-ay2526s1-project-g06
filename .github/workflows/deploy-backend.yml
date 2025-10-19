@@ -80,6 +80,11 @@ jobs:
             echo "MONGO_URL=${MONGO_URL_QUESTIONS}" >> services/question/.env
             echo "✓ Created services/question/.env"
 
+            # Collaboration Service .env
+            echo "PORT=4004" > services/collab/.env
+            echo "CORS_ORIGIN=https://d34n3c7d9pxc7j.cloudfront.net" >> services/collab/.env
+            echo "✓ Created services/collab/.env"
+
             echo "✅ All .env files configured from GitHub Secrets"
 
             echo "🔐 Setting up SSL certificate..."
