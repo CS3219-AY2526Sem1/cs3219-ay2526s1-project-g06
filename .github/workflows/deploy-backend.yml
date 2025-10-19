@@ -55,13 +55,11 @@ jobs:
 
 
             # User Service .env
-            cat > services/user/.env << ENVEOF
-PORT=4001
-NODE_ENV=${NODE_ENV}
-CORS_ORIGIN=${CORS_ORIGIN}
-MONGO_URL=${MONGO_URL}
-FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}
-ENVEOF
+            echo "PORT=4001" > services/user/.env
+            echo "NODE_ENV=\${NODE_ENV}" >> services/user/.env
+            echo "CORS_ORIGIN=\${CORS_ORIGIN}" >> services/user/.env
+            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=\${FIREBASE_JSON}" >> services/user/.env
 
             echo "✓ Created services/user/.env"
 
