@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import {io, Socket} from "socket.io-client";
 
-const SOCKET_SERVER_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4004"
+const SOCKET_SERVER_URL = import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}:4000` : "http://localhost:4004"
 
 const CollabComponent = () => {
   const [codespaceContent, setCodespaceContent] = useState("");
