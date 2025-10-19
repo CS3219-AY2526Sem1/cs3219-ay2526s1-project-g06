@@ -70,13 +70,11 @@ jobs:
             echo "Debug - FIREBASE_JSON length: ${#FIREBASE_JSON}"
 
             # User Service .env
-            cat > services/user/.env << ENV_FILE
-PORT=4001
-NODE_ENV=${NODE_ENV}
-CORS_ORIGIN=${CORS_ORIGIN}
-MONGO_URL=${MONGO_URL}
-FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}
-ENV_FILE
+            echo "PORT=4001" > services/user/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
+            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/user/.env
 
             echo "✓ Created services/user/.env"
 
@@ -84,28 +82,22 @@ ENV_FILE
             echo "Debug - User service .env file size: $(wc -c < services/user/.env) bytes"
 
             # Matching Service .env
-            cat > services/matching/.env << ENV_FILE
-PORT=4002
-NODE_ENV=${NODE_ENV}
-CORS_ORIGIN=${CORS_ORIGIN}
-ENV_FILE
+            echo "PORT=4002" > services/matching/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/matching/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/matching/.env
             echo "✓ Created services/matching/.env"
 
             # Question Service .env
-            cat > services/question/.env << ENV_FILE
-PORT=4003
-NODE_ENV=${NODE_ENV}
-CORS_ORIGIN=${CORS_ORIGIN}
-MONGO_URL=${MONGO_URL_QUESTIONS}
-ENV_FILE
+            echo "PORT=4003" > services/question/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/question/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/question/.env
+            echo "MONGO_URL=${MONGO_URL_QUESTIONS}" >> services/question/.env
             echo "✓ Created services/question/.env"
 
             # Collaboration Service .env
-            cat > services/collab/.env << ENV_FILE
-PORT=4004
-NODE_ENV=${NODE_ENV}
-CORS_ORIGIN=${CORS_ORIGIN}
-ENV_FILE
+            echo "PORT=4004" > services/collab/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/collab/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
 
             # Clean up the temporary Firebase JSON file
