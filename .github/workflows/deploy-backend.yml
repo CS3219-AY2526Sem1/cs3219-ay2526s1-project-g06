@@ -134,7 +134,7 @@ jobs:
             docker-compose ps
 
             echo "✅ Deployment complete!"
-DEPLOY_SCRIPT
+          DEPLOY_SCRIPT
 
           # Clean up the temporary file on the runner
           rm -f /tmp/firebase.json
