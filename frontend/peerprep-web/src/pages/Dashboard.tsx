@@ -34,11 +34,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    // Connect to matching service via Nginx
-    // Note: Must use HTTP backend, so CloudFront HTTPS won't work (mixed content blocked)
-    // Use environment variable or default to current hostname
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}`;
-    socketRef.current = io(backendUrl, {path: "/matching/socket.io/",});
+    // Connect to matching service
+    // In development: Connect directly to matching service port
+    // In production: Connect via Nginx with path prefix
+    const matchingUrl = import.meta.env.VITE_MATCHING_SERVICE_URL || import.meta.env.VITE_BACKEND_URL || `https://${window.location.hostname}`;
+    const socketPath = import.meta.env.VITE_MATCHING_SERVICE_URL ? "/socket.io/" : "/matching/socket.io/";
+
+    console.log('Connecting to matching service:', matchingUrl, 'with path:', socketPath);
+    socketRef.current = io(matchingUrl, {path: socketPath});
 
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);

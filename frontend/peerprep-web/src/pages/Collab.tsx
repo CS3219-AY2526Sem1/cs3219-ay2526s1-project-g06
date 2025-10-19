@@ -1,15 +1,26 @@
 import React, {useEffect, useRef, useState} from "react";
 import {io, Socket} from "socket.io-client";
 
-//const SOCKET_SERVER_URL = import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}:4004` : "http://localhost:4004"
-const SOCKET_SERVER_URL = "https://16.176.159.10:4004";
+// Configure collab service URL based on environment
+const getCollabUrl = () => {
+  // Use direct service URL if available (for local development)
+  if (import.meta.env.VITE_COLLAB_SERVICE_URL) {
+    return import.meta.env.VITE_COLLAB_SERVICE_URL;
+  }
+  // Otherwise use backend URL for production (via Nginx)
+  return import.meta.env.VITE_BACKEND_URL || `https://${window.location.hostname}`;
+};
 
 const CollabComponent = () => {
   const [codespaceContent, setCodespaceContent] = useState("");
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_SERVER_URL, {path: "/collab/socket.io/",});
+    const collabUrl = getCollabUrl();
+    const socketPath = import.meta.env.VITE_COLLAB_SERVICE_URL ? "/socket.io/" : "/collab/socket.io/";
+
+    console.log('Connecting to collab service:', collabUrl, 'with path:', socketPath);
+    const socket = io(collabUrl, {path: socketPath});
     socketRef.current = socket;
     
     socket.on('codespace change', (text: string) => {
