@@ -76,8 +76,14 @@ router.get("/me", requireSession, (req: any, res) => {
   console.log('GET /auth/me called, user data:', req.user);
   res.json({ 
     user: {
-      ...req.user,
-      profileCompleted: req.user.profileCompleted ?? false // Ensure it's never undefined
+      sub: req.user.uid,
+      email: req.user.email,
+      displayName: req.user.displayName,
+      photoURL: req.user.photoURL, // Add this line
+      role: req.user.role,
+      bio: req.user.bio,
+      language: req.user.language,
+      profileCompleted: req.user.profileCompleted ?? false
     }
   });
 });
