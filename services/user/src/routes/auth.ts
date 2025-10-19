@@ -40,13 +40,19 @@ router.post("/session", async (req, res) => {
     });
 
     // Set the Firebase token as session cookie
-    res.cookie('session', token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
       maxAge: 60 * 60 * 1000 // 1 hour
-    });
+    };
+
+    console.log('🍪 Setting session cookie with options:', cookieOptions);
+    console.log('🍪 Cookie secure:', cookieOptions.secure);
+    console.log('🍪 Cookie sameSite:', cookieOptions.sameSite);
+
+    res.cookie('session', token, cookieOptions);
 
     res.json({ 
       user: { 

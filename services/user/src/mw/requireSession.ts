@@ -8,7 +8,12 @@ export interface AuthedReq extends Request {
 
 export async function requireSession(req: any, res: any, next: any) {
   const token = req.cookies?.session;
-  
+
+  // Debug logging for troubleshooting
+  console.log('🔍 requireSession - Cookies:', Object.keys(req.cookies || {}));
+  console.log('🔍 requireSession - Session cookie exists:', !!token);
+  console.log('🔍 requireSession - Request path:', req.path);
+
   if (!token) return res.status(401).json({ error: "no_session" });
   
   try {
