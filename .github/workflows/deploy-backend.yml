@@ -36,13 +36,14 @@ jobs:
           FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
           # Pass secrets to EC2 via environment variables
-          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            MONGO_URL="${MONGO_URL}" \
+            MONGO_URL_QUESTIONS="${MONGO_URL_QUESTIONS}" \
+            CORS_ORIGIN="${CORS_ORIGIN}" \
+            NODE_ENV="${NODE_ENV}" \
+            FIREBASE_JSON="${FIREBASE_JSON}" \
+            bash << 'EOF'
             set -e
-
-            export MONGO_URL="${MONGO_URL}"
-            export MONGO_URL_QUESTIONS="$MONGO_URL_QUESTIONS"
-            export CORS_ORIGIN="${CORS_ORIGIN}"
-            export NODE_ENV="${NODE_ENV}"
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
@@ -56,10 +57,10 @@ jobs:
 
             # User Service .env
             echo "PORT=4001" > services/user/.env
-            echo "NODE_ENV=\${NODE_ENV}" >> services/user/.env
-            echo "CORS_ORIGIN=\${CORS_ORIGIN}" >> services/user/.env
-            echo "MONGO_URL=\${MONGO_URL}" >> services/user/.env
-            echo "FIREBASE_SERVICE_ACCOUNT_JSON=\${FIREBASE_JSON}" >> services/user/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
+            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/user/.env
 
             echo "✓ Created services/user/.env"
 
