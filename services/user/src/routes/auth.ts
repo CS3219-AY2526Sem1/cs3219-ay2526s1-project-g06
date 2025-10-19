@@ -44,6 +44,7 @@ router.post("/session", async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
       maxAge: 60 * 60 * 1000 // 1 hour
     });
 
@@ -119,7 +120,8 @@ router.post("/logout", requireSession, (req, res) => {
   res.clearCookie('session', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
   });
   res.json({ success: true });
 });
@@ -141,7 +143,8 @@ router.delete("/account", requireSession, async (req: any, res) => {
     res.clearCookie('session', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/'
     });
 
     console.log(`✅ User ${userId} deleted from both Firebase and MongoDB`);

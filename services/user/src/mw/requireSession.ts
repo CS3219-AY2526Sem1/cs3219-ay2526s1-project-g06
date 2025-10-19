@@ -44,7 +44,12 @@ export async function requireSession(req: any, res: any, next: any) {
     console.log(`✅ Session verified for user: ${req.user.uid}, profileCompleted: ${req.user.profileCompleted}`);
     next();
   } catch (error) {
-    res.clearCookie('session');
+    res.clearCookie('session', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/'
+    });
     return res.status(401).json({ error: "session_expired" });
   }
 }
