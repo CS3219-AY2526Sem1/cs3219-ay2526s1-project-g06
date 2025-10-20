@@ -18,6 +18,11 @@ router.post("/session", async (req, res) => {
   
   try {
     const decoded = await verifyIdToken(token);
+
+    // Validate that email exists
+    if (!decoded.email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
     
     // Save/update user in MongoDB on each login
     const user = await User.upsertFromAuth({
@@ -35,12 +40,19 @@ router.post("/session", async (req, res) => {
     });
 
     // Set the Firebase token as session cookie
-    res.cookie('session', token, {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
+      path: '/',
       maxAge: 60 * 60 * 1000 // 1 hour
-    });
+    };
+
+    console.log('🍪 Setting session cookie with options:', cookieOptions);
+    console.log('🍪 Cookie secure:', cookieOptions.secure);
+    console.log('🍪 Cookie sameSite:', cookieOptions.sameSite);
+
+    res.cookie('session', token, cookieOptions);
 
     res.json({ 
       user: { 
@@ -51,7 +63,7 @@ router.post("/session", async (req, res) => {
         role: user.role,
         bio: user.bio,
         language: user.language,
-        profileCompleted: user.profileCompleted
+        profileCompleted: user.profileCompleted ?? false
       } 
     });
   } catch (error) {
@@ -61,8 +73,19 @@ router.post("/session", async (req, res) => {
 });
 
 router.get("/me", requireSession, (req: any, res) => {
-  console.log('GET /auth/me called, user data:', req.user); // Debug log
-  res.json({ user: req.user });
+  console.log('GET /auth/me called, user data:', req.user);
+  res.json({ 
+    user: {
+      sub: req.user.uid,
+      email: req.user.email,
+      displayName: req.user.displayName,
+      photoURL: req.user.photoURL, // Add this line
+      role: req.user.role,
+      bio: req.user.bio,
+      language: req.user.language,
+      profileCompleted: req.user.profileCompleted ?? false
+    }
+  });
 });
 
 // Update user profile
@@ -70,22 +93,25 @@ router.put("/profile", requireSession, async (req: any, res) => {
   try {
     const { displayName, bio, language } = req.body;
     
-    // Validate input
-    if (bio && bio.length > 500) {
-      return res.status(400).json({ error: 'Bio must be 500 characters or less' });
-    }
-    
-    // Use session user ID instead of token
-    const updatedUser = await User.updateProfile(req.user.uid, {
-      displayName,
-      bio,
-      language
-    });
-    
+    console.log('PUT /auth/profile - Update request:', { displayName, bio, language });
+
+    const updatedUser = await User.findOneAndUpdate(
+      { uid: req.user.uid },
+      {
+        displayName: displayName?.trim(),
+        bio: bio?.trim(),
+        language: language?.trim(),
+        profileCompleted: true
+      },
+      { new: true }
+    );
+
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
+    console.log('Profile updated successfully:', updatedUser);
+
     res.json({
       user: {
         sub: updatedUser.uid,
@@ -99,8 +125,8 @@ router.put("/profile", requireSession, async (req: any, res) => {
       }
     });
   } catch (error) {
-    console.error('Profile update failed:', error);
-    res.status(500).json({ error: 'Profile update failed' });
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
@@ -109,7 +135,8 @@ router.post("/logout", requireSession, (req, res) => {
   res.clearCookie('session', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
+    path: '/'
   });
   res.json({ success: true });
 });
@@ -131,7 +158,8 @@ router.delete("/account", requireSession, async (req: any, res) => {
     res.clearCookie('session', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
+      path: '/'
     });
 
     console.log(`✅ User ${userId} deleted from both Firebase and MongoDB`);
@@ -163,7 +191,7 @@ router.post("/verify-session", requireSession, (req: any, res) => {
       role: req.user.role,
       bio: req.user.bio,
       language: req.user.language,
-      profileCompleted: req.user.profileCompleted
+      profileCompleted: req.user.profileCompleted ?? false
     }
   });
 });

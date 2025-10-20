@@ -10,11 +10,47 @@ dotenv.config();
 
 const questionApp = express();
 
-questionApp.use(cors({ 
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173", 
-    credentials: true,
-}));
+// Configure CORS based on environment
+const corsOptions = {
+  credentials: true,
+  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean | string | string[]) => void) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
 
+    if (process.env.NODE_ENV === 'production') {
+      const allowedOrigins = [
+        process.env.CORS_ORIGIN,
+        'https://d34n3c7d9pxc7j.cloudfront.net'
+      ].filter(Boolean);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️ CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    } else {
+      // In development, allow common local origins
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174'
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`⚠️ CORS blocked origin in dev: ${origin}`);
+        callback(null, true); // Be permissive in dev
+      }
+    }
+  }
+};
+
+questionApp.use(cors(corsOptions));
 questionApp.use(express.json());
 
 // general health check

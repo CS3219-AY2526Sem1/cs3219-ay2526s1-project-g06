@@ -35,15 +35,24 @@ jobs:
           NODE_ENV: ${{ secrets.NODE_ENV }}
           FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
-          # Pass secrets to EC2 via environment variables
-          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} bash << EOF
+          # Create a temporary file with the Firebase JSON to avoid escaping issues
+          echo "$FIREBASE_JSON" > /tmp/firebase.json
+
+          # Copy the Firebase JSON file to EC2
+          scp -i ~/.ssh/peerprep-key.pem /tmp/firebase.json ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/firebase.json
+
+          # Pass other secrets to EC2 via environment variables
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'DEPLOY_SCRIPT'
             set -e
 
-            export MONGO_URL="${MONGO_URL}"
-            export MONGO_URL_QUESTIONS="$MONGO_URL_QUESTIONS"
-            export CORS_ORIGIN="${CORS_ORIGIN}"
-            export NODE_ENV="${NODE_ENV}"
-            export FIREBASE_JSON='${FIREBASE_JSON}'
+            # Set environment variables from the GitHub runner
+            export MONGO_URL='${{ secrets.MONGO_URL }}'
+            export MONGO_URL_QUESTIONS='${{ secrets.MONGO_URL_QUESTIONS }}'
+            export CORS_ORIGIN='${{ secrets.CORS_ORIGIN }}'
+            export NODE_ENV='${{ secrets.NODE_ENV }}'
+
+            # Read Firebase JSON from the copied file
+            export FIREBASE_JSON=$(cat /tmp/firebase.json)
 
             echo "📂 Navigating to project directory..."
             cd /home/ubuntu/cs3219-ay2526s1-project-g06
@@ -54,16 +63,23 @@ jobs:
 
             echo "📝 Creating .env files from GitHub Secrets..."
 
+            # Debug: Check if variables are set
+            echo "Debug - NODE_ENV is: ${NODE_ENV}"
+            echo "Debug - CORS_ORIGIN is: ${CORS_ORIGIN}"
+            echo "Debug - MONGO_URL length: ${#MONGO_URL}"
+            echo "Debug - FIREBASE_JSON length: ${#FIREBASE_JSON}"
 
             # User Service .env
             echo "PORT=4001" > services/user/.env
             echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
             echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
-            # Write Firebase JSON as single-line minified JSON (no newlines)
-            echo "FIREBASE_SERVICE_ACCOUNT_JSON='${FIREBASE_JSON}'" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/user/.env
 
             echo "✓ Created services/user/.env"
+
+            # Verify the file was created correctly
+            echo "Debug - User service .env file size: $(wc -c < services/user/.env) bytes"
 
             # Matching Service .env
             echo "PORT=4002" > services/matching/.env
@@ -83,6 +99,9 @@ jobs:
             echo "NODE_ENV=${NODE_ENV}" >> services/collab/.env
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
+
+            # Clean up the temporary Firebase JSON file
+            rm -f /tmp/firebase.json
 
             echo "✅ All .env files configured from GitHub Secrets"
 
@@ -115,7 +134,10 @@ jobs:
             docker-compose ps
 
             echo "✅ Deployment complete!"
-          EOF
+          DEPLOY_SCRIPT
+
+          # Clean up the temporary file on the runner
+          rm -f /tmp/firebase.json
 
       - name: Verify deployment
         run: |

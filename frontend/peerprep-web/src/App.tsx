@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProfileSetup from './pages/ProfileSetup'; 
 import Collab from './pages/Collab';
+import Profile from './pages/Profile';
+import EditProfile from './pages/EditProfile';
 import './App.css';
 
 function AppRoutes() {
@@ -15,11 +17,13 @@ function AppRoutes() {
   }
 
   // Debug: Log user profileCompleted status
-  console.log('App.tsx - User profile status:', {
-    user: user?.email,
-    profileCompleted: user?.profileCompleted,
-    type: typeof user?.profileCompleted
-  });
+  if (user && user.profileCompleted !== undefined) {
+    console.log('App.tsx - User profile status:', {
+      user: user.email,
+      profileCompleted: user.profileCompleted,
+      type: typeof user.profileCompleted
+    });
+  }
 
   // Check if user needs to complete profile setup
   if (user && !user.profileCompleted) {
@@ -33,6 +37,8 @@ function AppRoutes() {
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
       <Route path="/collab" element={<Collab />} />
       <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+      <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+      <Route path="/profile/edit" element={user ? <EditProfile /> : <Navigate to="/login" />} />
     </Routes>
   );
 }

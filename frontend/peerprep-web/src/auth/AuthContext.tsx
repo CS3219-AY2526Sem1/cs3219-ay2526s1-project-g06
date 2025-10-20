@@ -7,6 +7,7 @@ type UserData = {
   sub: string; 
   email: string;
   displayName?: string;  // Make sure this is included
+  photoURL?: string;
   bio?: string;
   language?: string;
   profileCompleted?: boolean;
@@ -24,6 +25,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let hasCheckedInitialSession = false;
+
     // Check for existing session on app load
     (async () => {
       console.log('AuthContext: Checking existing session...');
@@ -31,9 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await me();
         console.log('AuthContext: me() returned:', res);
         setUser(res);
+        hasCheckedInitialSession = true;
       } catch (error) {
         console.error('AuthContext: No existing session');
         setUser(null);
+        hasCheckedInitialSession = true;
       } finally {
         setLoading(false);
       }
@@ -41,20 +46,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+      while (!hasCheckedInitialSession) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
       if (firebaseUser && !user) {
         console.log('Firebase user detected, creating backend session...');
         try {
           const token = await firebaseUser.getIdToken();
           const response = await createSession(token);
-          // Make sure to set all user data including displayName
-          setUser({
+        
+          // Use the complete user data from session creation
+          const userData = {
             sub: response.user.sub,
             email: response.user.email,
             displayName: response.user.displayName,
+            photoURL: response.user.photoURL,
             bio: response.user.bio,
             language: response.user.language,
-            profileCompleted: response.user.profileCompleted
+            profileCompleted: response.user.profileCompleted ?? false
+          };
+          console.log('App.tsx - User profile status:', {
+            user: userData.email,
+            profileCompleted: userData.profileCompleted,
+            type: typeof userData.profileCompleted
           });
+          setUser(userData);
           console.log('Backend session created successfully');
         } catch (error) {
           console.error('Failed to create backend session:', error);

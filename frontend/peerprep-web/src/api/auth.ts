@@ -71,6 +71,7 @@ export async function me() {
     uid: string; 
     email: string;
     displayName?: string;
+    photoURL?: string;
     bio?: string;
     language?: string;
     profileCompleted?: boolean;
@@ -79,6 +80,7 @@ export async function me() {
     sub: data.user.uid, 
     email: data.user.email,
     displayName: data.user.displayName,
+    photoURL: data.user.photoURL,
     bio: data.user.bio,
     language: data.user.language,
     profileCompleted: data.user.profileCompleted
