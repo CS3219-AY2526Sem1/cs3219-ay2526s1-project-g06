@@ -1,0 +1,109 @@
+import { createContext, useContext, useEffect, useState } from "react";
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../lib/firebase';
+import { me, logout, createSession } from "../api/auth";
+
+type UserData = { 
+  sub: string; 
+  email: string;
+  displayName?: string;  // Make sure this is included
+  photoURL?: string;
+  bio?: string;
+  language?: string;
+  profileCompleted?: boolean;
+} | null;
+
+const Ctx = createContext<{
+  user: UserData;
+  loading: boolean;
+  setUser: (u: UserData) => void;
+  signOut: () => Promise<void>;
+}>({ user: null, loading: true, setUser: () => {}, signOut: async () => {} });
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<UserData>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let hasCheckedInitialSession = false;
+
+    // Check for existing session on app load
+    (async () => {
+      console.log('AuthContext: Checking existing session...');
+      try {
+        const res = await me();
+        console.log('AuthContext: me() returned:', res);
+        setUser(res);
+        hasCheckedInitialSession = true;
+      } catch (error) {
+        console.error('AuthContext: No existing session');
+        setUser(null);
+        hasCheckedInitialSession = true;
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    // Listen for Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+      while (!hasCheckedInitialSession) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      if (firebaseUser && !user) {
+        console.log('Firebase user detected, creating backend session...');
+        try {
+          const token = await firebaseUser.getIdToken();
+          const response = await createSession(token);
+        
+          // Use the complete user data from session creation
+          const userData = {
+            sub: response.user.sub,
+            email: response.user.email,
+            displayName: response.user.displayName,
+            photoURL: response.user.photoURL,
+            bio: response.user.bio,
+            language: response.user.language,
+            profileCompleted: response.user.profileCompleted ?? false
+          };
+          console.log('App.tsx - User profile status:', {
+            user: userData.email,
+            profileCompleted: userData.profileCompleted,
+            type: typeof userData.profileCompleted
+          });
+          setUser(userData);
+          console.log('Backend session created successfully');
+        } catch (error) {
+          console.error('Failed to create backend session:', error);
+          setUser(null);
+        }
+      } else if (!firebaseUser && user) {
+        console.log('Firebase user signed out');
+        setUser(null);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  async function signOut() {
+    try {
+      console.log('Signing out...');
+      await logout();
+      await auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  }
+
+  return (
+    <Ctx.Provider value={{ user, loading, setUser, signOut }}>
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(Ctx);
+}
