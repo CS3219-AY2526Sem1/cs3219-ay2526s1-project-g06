@@ -11,7 +11,7 @@ export default function ProfileSetup() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { setUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,17 +20,12 @@ export default function ProfileSetup() {
     setError('');
 
     try {
-      const response = await updateProfile(formData);
+      console.log('📝 ProfileSetup: Submitting profile data...');
+      await updateProfile(formData);
       
       // Update user context with new profile data
-      setUser({
-        sub: response.user.sub,
-        email: response.user.email,
-        displayName: response.user.displayName,
-        bio: response.user.bio,
-        language: response.user.language,
-        profileCompleted: response.user.profileCompleted
-      });
+      console.log('🔄 ProfileSetup: Refreshing user data...');
+      await refreshUser();
 
       navigate('/dashboard');
     } catch (err: any) {
