@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import { authRouter } from "./routes/auth";
+import authRouter from "./routes/auth";
 
 async function main() {
   // Connect to MongoDB Atlas
@@ -40,7 +40,8 @@ async function main() {
       if (process.env.NODE_ENV === 'production') {
         const allowedOrigins = [
           process.env.CORS_ORIGIN, // CloudFront URL
-          'https://d34n3c7d9pxc7j.cloudfront.net' // Hardcoded fallback
+          'https://d34n3c7d9pxc7j.cloudfront.net', // Hardcoded fallback
+          'http://localhost:4000' // Auth service
         ].filter(Boolean);
 
         if (allowedOrigins.includes(origin)) {
@@ -50,14 +51,15 @@ async function main() {
           callback(new Error('Not allowed by CORS'));
         }
       } else {
-        // In development, allow common local origins
+        // In development, allow common local origins + auth service
         const allowedOrigins = [
           'http://localhost:3000',
           'http://localhost:5173',
           'http://localhost:5174',
           'http://127.0.0.1:3000',
           'http://127.0.0.1:5173',
-          'http://127.0.0.1:5174'
+          'http://127.0.0.1:5174',
+          'http://localhost:4000', // Auth service
         ];
 
         if (allowedOrigins.includes(origin)) {
@@ -82,7 +84,8 @@ async function main() {
 
   const port = Number(process.env.PORT) || 4001;
   app.listen(port, "0.0.0.0", () => {
-    console.log(`🚀 User service v1.0.2 running on http://localhost:${port}`);
+    console.log(`🚀 User service v1.0.3 running on http://localhost:${port}`);
+    console.log(`   Auth service: ${process.env.AUTH_SERVICE_URL || 'http://localhost:4000'}`);
   });
 }
 

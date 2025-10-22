@@ -1,102 +1,205 @@
-import { Router } from "express";
-import { verifyIdToken } from "../firebase";
-import User from "../models/User"; 
-import admin from "firebase-admin";
-import { requireSession } from "../mw/requireSession";
+import { Router, Request } from "express";
+import axios from "axios";
+import User from "../models/User";
+import { auth as firebaseAuth } from "../firebase";
 
 const router = Router();
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4000';
 
-// Create session after Firebase auth
-router.post("/session", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(400).json({ error: 'missing_id_token' });
-  }
-
-  const token = authHeader.split('Bearer ')[1];
-  
+// Helper function to verify session
+async function verifySession(req: Request): Promise<any> {
   try {
-    const decoded = await verifyIdToken(token);
-
-    // Validate that email exists
-    if (!decoded.email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
+    const sessionCookie = req.cookies?.session;
     
-    // Save/update user in MongoDB on each login
-    const user = await User.upsertFromAuth({
-      uid: decoded.uid,
-      email: decoded.email,
-      displayName: decoded.name,
-      photoURL: decoded.picture,
+    if (!sessionCookie) {
+      throw new Error("No session cookie");
+    }
+
+    const response = await axios.post(
+      `${AUTH_SERVICE_URL}/auth/verify`,
+      { sessionToken: sessionCookie }
+    );
+
+    if (response.data.authenticated) {
+      return response.data.user;
+    } else {
+      throw new Error("Not authenticated");
+    }
+  } catch (error) {
+    throw new Error("Authentication failed");
+  }
+}
+
+// CREATE SESSION
+router.post("/session", async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      console.error('❌ User Service: No idToken in request');
+      return res.status(400).json({ error: "ID token required" });
+    }
+
+    console.log('🔍 User Service: Creating session via auth service...');
+    console.log('🔍 User Service: idToken length:', idToken.length);
+
+    // Call auth service to create session
+    const authResponse = await axios.post(
+      `${AUTH_SERVICE_URL}/auth/session`,
+      { idToken },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('✅ User Service: Session created by auth service');
+
+    // Get user data from auth service response
+    const decodedUser = authResponse.data.user;
+    
+    console.log('🔍 User Service: Received user data:', {
+      uid: decodedUser.uid,
+      email: decodedUser.email,
+      displayName: decodedUser.displayName,
+      photoURL: decodedUser.photoURL ? 'Present' : 'Missing'
     });
 
-    console.log('✅ Session created for user:', {
-      uid: user.uid,
-      email: user.email,
-      profileCompleted: user.profileCompleted,
-      type: typeof user.profileCompleted
+    // Check if user already exists
+    const existingUser = await User.findOne({ uid: decodedUser.uid });
+
+    if (existingUser) {
+      // User exists - only update photoURL, keep existing displayName
+      console.log('🔄 User Service: User exists, updating photoURL only');
+      
+      const updateData: any = {
+        updatedAt: new Date()
+      };
+
+      // Only update photoURL if it has changed or is being set for the first time
+      if (decodedUser.photoURL && decodedUser.photoURL !== existingUser.photoURL) {
+        updateData.photoURL = decodedUser.photoURL;
+        console.log('📸 User Service: Updating photoURL');
+      }
+
+      const user = await User.findOneAndUpdate(
+        { uid: decodedUser.uid },
+        { $set: updateData },
+        { new: true }
+      );
+
+      console.log('✅ User Service: Existing user session established');
+
+      // Set session cookie
+      const sessionToken = authResponse.data.sessionToken;
+      res.cookie("session", sessionToken, {
+        maxAge: 60 * 60 * 24 * 5 * 1000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
+      return res.json({
+        user: {
+          sub: user!.uid,
+          email: user!.email,
+          displayName: user!.displayName, // Keep user's custom display name
+          photoURL: user!.photoURL,
+          role: user!.role,
+          bio: user!.bio,
+          language: user!.language,
+          profileCompleted: user!.profileCompleted
+        }
+      });
+    }
+
+    // User doesn't exist - create new user with Firebase display name as initial value
+    console.log('➕ User Service: Creating new user');
+    
+    const user = await User.create({
+      uid: decodedUser.uid,
+      email: decodedUser.email,
+      displayName: decodedUser.displayName || null, // Use Firebase name initially
+      photoURL: decodedUser.photoURL || null,
+      role: 'user',
+      profileCompleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
 
-    // Set the Firebase token as session cookie
-    const cookieOptions: any = {
+    console.log('✅ User Service: New user created');
+
+    // Set session cookie
+    const sessionToken = authResponse.data.sessionToken;
+    res.cookie("session", sessionToken, {
+      maxAge: 60 * 60 * 24 * 5 * 1000,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'lax' as const,
-      path: '/',
-      maxAge: 60 * 60 * 1000 // 1 hour
-    };
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
 
-    console.log('🍪 Setting session cookie with options:', cookieOptions);
-    console.log('🍪 Cookie secure:', cookieOptions.secure);
-    console.log('🍪 Cookie sameSite:', cookieOptions.sameSite);
-
-    res.cookie('session', token, cookieOptions);
-
-    res.json({ 
-      user: { 
-        sub: decoded.uid, 
-        email: decoded.email,
+    res.json({
+      user: {
+        sub: user.uid,
+        email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
         role: user.role,
         bio: user.bio,
         language: user.language,
-        profileCompleted: user.profileCompleted ?? false
-      } 
+        profileCompleted: user.profileCompleted
+      }
     });
-  } catch (error) {
-    console.error('Session creation failed:', error);
-    res.status(401).json({ error: 'Invalid token' });
+  } catch (error: any) {
+    console.error('❌ User Service: Session creation error:', error.message);
+    
+    if (error.response) {
+      console.error('❌ User Service: Auth service response:', error.response.data);
+    }
+    
+    res.status(500).json({ error: "Failed to create session" });
   }
 });
 
-router.get("/me", requireSession, (req: any, res) => {
-  console.log('GET /auth/me called, user data:', req.user);
-  res.json({ 
-    user: {
-      sub: req.user.uid,
-      email: req.user.email,
-      displayName: req.user.displayName,
-      photoURL: req.user.photoURL, // Add this line
-      role: req.user.role,
-      bio: req.user.bio,
-      language: req.user.language,
-      profileCompleted: req.user.profileCompleted ?? false
+// Get current user
+router.get("/me", async (req, res) => {
+  try {
+    const verifiedUser = await verifySession(req);
+    
+    const user = await User.findOne({ uid: verifiedUser.uid });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+
+    res.json({
+      user: {
+        sub: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        role: user.role,
+        bio: user.bio,
+        language: user.language,
+        profileCompleted: user.profileCompleted
+      }
+    });
+  } catch (error: any) {
+    console.error('Get user error:', error.message);
+    res.status(401).json({ error: 'Unauthorized' });
+  }
 });
 
-// Update user profile
-router.put("/profile", requireSession, async (req: any, res) => {
+// Update profile
+router.put("/profile", async (req, res) => {
   try {
-    const { displayName, bio, language } = req.body;
+    const verifiedUser = await verifySession(req);
     
-    console.log('PUT /auth/profile - Update request:', { displayName, bio, language });
+    const { displayName, bio, language } = req.body;
 
     const updatedUser = await User.findOneAndUpdate(
-      { uid: req.user.uid },
+      { uid: verifiedUser.uid },
       {
         displayName: displayName?.trim(),
         bio: bio?.trim(),
@@ -110,8 +213,6 @@ router.put("/profile", requireSession, async (req: any, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log('Profile updated successfully:', updatedUser);
-
     res.json({
       user: {
         sub: updatedUser.uid,
@@ -124,76 +225,83 @@ router.put("/profile", requireSession, async (req: any, res) => {
         profileCompleted: updatedUser.profileCompleted
       }
     });
-  } catch (error) {
-    console.error('Profile update error:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+  } catch (error: any) {
+    console.error('Profile update error:', error.message);
+    res.status(401).json({ error: 'Unauthorized' });
   }
 });
 
-// Logout endpoint
-router.post("/logout", requireSession, (req, res) => {
-  res.clearCookie('session', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
-    path: '/'
-  });
-  res.json({ success: true });
+// Logout
+router.post("/logout", async (req, res) => {
+  try {
+    const sessionCookie = req.cookies.session;
+    
+    await axios.post(
+      `${AUTH_SERVICE_URL}/auth/revoke`,
+      { sessionToken: sessionCookie }
+    );
+
+    res.clearCookie("session");
+    res.json({ success: true });
+  } catch (error) {
+    res.clearCookie("session");
+    res.json({ success: true });
+  }
 });
 
-router.delete("/account", requireSession, async (req: any, res) => {
+// Delete account - Verify auth and delete user
+router.delete("/account", async (req, res) => {
   try {
-    const userId = req.user.uid; // Get from session, not token
+    // Verify session with auth service
+    const verifiedUser = await verifySession(req);
     
-    // Delete from MongoDB first
-    const deletedUser = await User.findOneAndDelete({ uid: userId });
+    console.log('🔍 User Service: Deleting account for:', verifiedUser.uid);
+
+    // Delete user from MongoDB
+    const deletedUser = await User.findOneAndDelete({ uid: verifiedUser.uid });
+    
     if (!deletedUser) {
-      return res.status(404).json({ error: 'User not found in database' });
+      console.warn('⚠️ User Service: User not found in database:', verifiedUser.uid);
+    } else {
+      console.log('✅ User Service: User deleted from database');
     }
-    
-    // Delete from Firebase Auth
-    await admin.auth().deleteUser(userId);
+
+    // Delete user from Firebase
+    try {
+      await firebaseAuth.deleteUser(verifiedUser.uid);
+      console.log('✅ User Service: User deleted from Firebase');
+    } catch (firebaseError: any) {
+      console.error('❌ User Service: Failed to delete from Firebase:', firebaseError.message);
+      // Continue anyway since user is already deleted from MongoDB
+    }
+
+    // Revoke session via auth service
+    try {
+      const sessionCookie = req.cookies.session;
+      await axios.post(
+        `${AUTH_SERVICE_URL}/auth/revoke`,
+        { sessionToken: sessionCookie },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log('✅ User Service: Session revoked');
+    } catch (error) {
+      console.error('⚠️ User Service: Failed to revoke session:', error);
+    }
 
     // Clear session cookie
-    res.clearCookie('session', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as any,
-      path: '/'
-    });
-
-    console.log(`✅ User ${userId} deleted from both Firebase and MongoDB`);
-    res.json({ message: 'Account deleted successfully' });
+    res.clearCookie("session");
     
+    res.json({ 
+      message: "Account deleted successfully" 
+    });
   } catch (error: any) {
-    console.error('Account deletion failed:', error);
-
-    if (error.code === 'auth/user-not-found') {
-      return res.json({ message: 'Account deleted (user not found in Firebase)' });
-    }
-
-    res.status(500).json({ error: 'Account deletion failed' });
+    console.error('❌ User Service: Account deletion error:', error.message);
+    res.status(401).json({ error: 'Unauthorized' });
   }
 });
 
-// Internal endpoint for other services to verify sessions
-router.post("/verify-session", requireSession, (req: any, res) => {
-  console.log('🔍 Session verification called for user:', req.user.uid);
-  
-  // This endpoint is only called by other backend services
-  res.json({ 
-    valid: true, 
-    user: {
-      uid: req.user.uid,
-      email: req.user.email,
-      displayName: req.user.displayName,
-      photoURL: req.user.photoURL,
-      role: req.user.role,
-      bio: req.user.bio,
-      language: req.user.language,
-      profileCompleted: req.user.profileCompleted ?? false
-    }
-  });
-});
-
-export { router as authRouter };
+export default router;

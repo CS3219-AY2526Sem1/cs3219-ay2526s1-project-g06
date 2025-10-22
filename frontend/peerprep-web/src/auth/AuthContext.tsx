@@ -1,109 +1,132 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { me, logout, createSession } from "../api/auth";
+import { onAuthStateChanged, signOut as firebaseSignOut, User as FirebaseUser } from "firebase/auth";
+import { auth } from "../lib/firebase";
+import { createSession, me } from "../api/auth";
 
-type UserData = { 
-  sub: string; 
+interface User {
+  sub: string;
   email: string;
-  displayName?: string;  // Make sure this is included
+  displayName?: string;
   photoURL?: string;
   bio?: string;
   language?: string;
   profileCompleted?: boolean;
-} | null;
+  role?: string;
+}
 
-const Ctx = createContext<{
-  user: UserData;
+interface AuthContextType {
+  user: User | null;
+  firebaseUser: FirebaseUser | null;
   loading: boolean;
-  setUser: (u: UserData) => void;
   signOut: () => Promise<void>;
-}>({ user: null, loading: true, setUser: () => {}, signOut: async () => {} });
+  refreshUser: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserData>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let hasCheckedInitialSession = false;
-
-    // Check for existing session on app load
-    (async () => {
-      console.log('AuthContext: Checking existing session...');
-      try {
-        const res = await me();
-        console.log('AuthContext: me() returned:', res);
-        setUser(res);
-        hasCheckedInitialSession = true;
-      } catch (error) {
-        console.error('AuthContext: No existing session');
+  const refreshUser = async () => {
+    try {
+      const userData = await me();
+      if (userData) {
+        // Prefer Firebase photoURL if available (fresher from Google)
+        const photoURL = firebaseUser?.photoURL || userData.photoURL;
+        console.log('🔄 AuthContext: Refreshed user data:', { 
+          email: userData.email, 
+          photoURL: photoURL ? 'Present' : 'Missing' 
+        });
+        setUser({ ...userData, photoURL });
+      } else {
         setUser(null);
-        hasCheckedInitialSession = true;
-      } finally {
-        setLoading(false);
       }
-    })();
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+      setUser(null);
+    }
+  };
 
-    // Listen for Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      while (!hasCheckedInitialSession) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-      
-      if (firebaseUser && !user) {
-        console.log('Firebase user detected, creating backend session...');
+  useEffect(() => {
+    console.log("AuthContext: Checking existing session...");
+    
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("AuthContext: Firebase auth state changed:", firebaseUser?.email);
+      setFirebaseUser(firebaseUser);
+
+      if (firebaseUser) {
         try {
-          const token = await firebaseUser.getIdToken();
-          const response = await createSession(token);
-        
-          // Use the complete user data from session creation
-          const userData = {
-            sub: response.user.sub,
-            email: response.user.email,
-            displayName: response.user.displayName,
-            photoURL: response.user.photoURL,
-            bio: response.user.bio,
-            language: response.user.language,
-            profileCompleted: response.user.profileCompleted ?? false
-          };
-          console.log('App.tsx - User profile status:', {
-            user: userData.email,
-            profileCompleted: userData.profileCompleted,
-            type: typeof userData.profileCompleted
+          console.log("AuthContext: Firebase user detected, getting token...");
+          const idToken = await firebaseUser.getIdToken();
+          
+          console.log("AuthContext: Creating backend session...");
+          const sessionResponse = await createSession(idToken);
+          
+          console.log("AuthContext: Session response:", {
+            email: sessionResponse.user.email,
+            displayName: sessionResponse.user.displayName,
+            photoURL: sessionResponse.user.photoURL ? 'Present' : 'Missing'
           });
+
+          // Use the user data from createSession response
+          // This includes the photoURL that was just created
+          const userData = {
+            sub: sessionResponse.user.sub,
+            email: sessionResponse.user.email,
+            displayName: sessionResponse.user.displayName,
+            photoURL: firebaseUser.photoURL || sessionResponse.user.photoURL, // Prefer Firebase
+            bio: sessionResponse.user.bio,
+            language: sessionResponse.user.language,
+            profileCompleted: sessionResponse.user.profileCompleted,
+            role: sessionResponse.user.role
+          };
+
+          console.log("AuthContext: Setting user data:", {
+            email: userData.email,
+            displayName: userData.displayName,
+            photoURL: userData.photoURL ? 'Set' : 'Missing'
+          });
+
           setUser(userData);
-          console.log('Backend session created successfully');
         } catch (error) {
-          console.error('Failed to create backend session:', error);
+          console.error("AuthContext: Failed to create backend session:", error);
           setUser(null);
         }
-      } else if (!firebaseUser && user) {
-        console.log('Firebase user signed out');
+      } else {
+        console.log("AuthContext: No Firebase user");
         setUser(null);
       }
+      
+      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
-  async function signOut() {
+  const signOut = async () => {
     try {
-      console.log('Signing out...');
-      await logout();
-      await auth.signOut();
+      await firebaseSignOut(auth);
       setUser(null);
+      setFirebaseUser(null);
+      console.log("AuthContext: User signed out");
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error("Sign out error:", error);
     }
-  }
+  };
 
   return (
-    <Ctx.Provider value={{ user, loading, setUser, signOut }}>
+    <AuthContext.Provider value={{ user, firebaseUser, loading, signOut, refreshUser }}>
       {children}
-    </Ctx.Provider>
+    </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(Ctx);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

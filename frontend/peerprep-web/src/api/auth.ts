@@ -10,10 +10,10 @@ export async function createSession(firebaseToken: string) {
   const res = await fetch(`${BASE}/auth/session`, {
     method: "POST",
     headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${firebaseToken}`
+      "Content-Type": "application/json"
     },
-    credentials: "include"
+    credentials: "include",
+    body: JSON.stringify({ idToken: firebaseToken })  // ← Add this line
   });
   return json<{ user: { 
     sub: string; 

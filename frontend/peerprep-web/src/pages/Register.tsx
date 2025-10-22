@@ -3,6 +3,7 @@ import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } f
 import { auth } from '../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { createSession } from '../api/auth';
 
 // Password validation function
 const validatePassword = (password: string): string | null => {
@@ -26,7 +27,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [passwordError, setPasswordError] = useState(''); // New state for password validation
-  const { setUser } = useAuth();
+  const { refreshUser } = useAuth();
   const navigate = useNavigate();
 
   // Real-time password validation
@@ -55,10 +56,32 @@ export default function Register() {
     setError('');
 
     try {
+      console.log('📧 Register: Creating user with email...');
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      setUser({ sub: userCredential.user.uid, email: userCredential.user.email! });
-      navigate('/dashboard');
+      
+      console.log('🔑 Register: Getting ID token...');
+      const idToken = await userCredential.user.getIdToken();
+      
+      console.log('📤 Register: Creating backend session...');
+      const sessionResponse = await createSession(idToken);
+      
+      console.log('✅ Register: Session created:', sessionResponse.user.email);
+      console.log('📊 Register: Profile completed:', sessionResponse.user.profileCompleted);
+      
+      // Refresh user data to sync with backend
+      console.log('🔄 Register: Refreshing user data...');
+      await refreshUser(); // ← Changed from setUser to refreshUser
+
+      // Navigate based on profile completion status
+      if (sessionResponse.user.profileCompleted) {
+        console.log('➡️ Register: Navigating to dashboard');
+        navigate('/dashboard');
+      } else {
+        console.log('➡️ Register: Navigating to profile setup');
+        navigate('/profile/setup');
+      }
     } catch (err: any) {
+      console.error('❌ Register: Email registration failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -70,11 +93,34 @@ export default function Register() {
     setError('');
 
     try {
+      console.log('🔐 Register: Google sign-up starting...');
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
-      setUser({ sub: userCredential.user.uid, email: userCredential.user.email! });
-      navigate('/dashboard');
+      
+      console.log('✅ Register: Google sign-up successful:', userCredential.user.email);
+      console.log('🔑 Register: Getting ID token...');
+      const idToken = await userCredential.user.getIdToken();
+      
+      console.log('📤 Register: Creating backend session...');
+      const sessionResponse = await createSession(idToken);
+      
+      console.log('✅ Register: Session created:', sessionResponse.user.email);
+      console.log('📊 Register: Profile completed:', sessionResponse.user.profileCompleted);
+      
+      // Refresh user data to sync with backend
+      console.log('🔄 Register: Refreshing user data...');
+      await refreshUser(); // ← Changed from setUser to refreshUser
+
+      // Navigate based on profile completion status
+      if (sessionResponse.user.profileCompleted) {
+        console.log('➡️ Register: Navigating to dashboard');
+        navigate('/dashboard');
+      } else {
+        console.log('➡️ Register: Navigating to profile setup');
+        navigate('/profile/setup');
+      }
     } catch (err: any) {
+      console.error('❌ Register: Google registration failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);

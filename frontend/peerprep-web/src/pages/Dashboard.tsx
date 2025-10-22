@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { io, Socket } from "socket.io-client";
 import { deleteAccount } from '../api/auth';
-import { auth } from '../lib/firebase';
+import { getAuth } from 'firebase/auth';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -102,15 +102,31 @@ export default function Dashboard() {
   };
 
   const handleDeleteAccount = async () => {
+  if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+    return;
+  }
+
   try {
-    // No Firebase token needed - uses session cookie
-    await deleteAccount();
+    console.log('🗑️ Dashboard: Starting account deletion...');
     
-    // User is now deleted from both systems
-    await signOut();
+    // 1. Delete account via backend (deletes from Firebase + MongoDB)
+    await deleteAccount();
+    console.log('✅ Dashboard: Account deleted from backend');
+    
+    // 2. Sign out WITHOUT triggering auth state listeners
+    // This prevents the second unauthorized request
+    const auth = getAuth();
+    await auth.signOut();
+    console.log('✅ Dashboard: Firebase signed out');
+    
+    // 3. Clear local state
+    signOut(); // This will clear AuthContext
+    
+    // 4. Navigate to login
+    navigate('/login', { replace: true });
     
   } catch (error) {
-    console.error('Account deletion failed:', error);
+    console.error('❌ Dashboard: Account deletion failed:', error);
     alert('Failed to delete account. Please try again.');
   }
 };
