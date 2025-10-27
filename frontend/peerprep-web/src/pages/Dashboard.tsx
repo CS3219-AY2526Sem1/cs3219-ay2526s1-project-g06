@@ -6,8 +6,23 @@ import { getAuth } from 'firebase/auth';
 
 import { useNavigate } from 'react-router-dom';
 
-const DIFFICULTIES = ["Easy", "Medium", "Hard"];
-const TOPICS = ["DP", "Math", "Linked List"];
+// Resolve Question Service base URL
+const getQuestionBase = () =>
+  import.meta.env.VITE_QUESTION_SERVICE_URL || "http://localhost:4003/api/question_service";
+
+// API helpers
+async function fetchTopics(): Promise<string[]> {
+  const res = await fetch(`${getQuestionBase()}/topics`);
+  if (!res.ok) throw new Error(`Failed to fetch topics: ${res.status}`);
+  return res.json();
+}
+
+async function fetchDifficultiesForTopic(topic: string): Promise<string[]> {
+  const res = await fetch(`${getQuestionBase()}/filtered/difficulties/topic/${encodeURIComponent(topic)}`);
+  if (!res.ok) throw new Error(`Failed to fetch difficulties: ${res.status}`);
+  return res.json();
+}
+
 
 interface Match {
   roomId: string;
@@ -19,16 +34,40 @@ interface Match {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [matchFound, setMatchFound] = useState<Match | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [difficulties, setDifficulties] = useState<string[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
 
   const navigate = useNavigate();
+  // Load all topics at mount
+  useEffect(() => {
+    fetchTopics()
+      .then((t) => setTopics(t))
+      .catch((e) => console.error(e));
+  }, []);
+
+  // When topic changes, load difficulties for that topic
+  useEffect(() => {
+    if (!selectedTopic) {
+      setDifficulties([]);
+      setSelectedDifficulty("");
+      return;
+    }
+    fetchDifficultiesForTopic(selectedTopic)
+      .then((ds) => {
+        setDifficulties(ds);
+        // If previously selected difficulty no longer valid, clear it
+        setSelectedDifficulty((prev) => (ds.includes(prev) ? prev : ""));
+      })
+      .catch((e) => console.error(e));
+  }, [selectedTopic]);
 
   useEffect(() => {
     // Connect to matching service
@@ -45,20 +84,14 @@ export default function Dashboard() {
     });
 
     socketRef.current.on("match_found", (match: Match) => {
-      console.log("Match found!", match);
-      setIsSearching(false);
-      setMatchFound(match);
-      setStatusMessage(`Matched with ${match.user1.userId === user?.sub ? match.user2.email : match.user1.email}!`);
+      const topic = match.topics?.[0] || selectedTopic;
+      const difficulty = match.difficulties?.[0] || selectedDifficulty;
     
-      // Navigate to /collab and pass the payload the Collab page needs
       navigate("/collab", {
         state: {
           roomId: match.roomId,
-          collab: {
-            topic: selectedTopics[0]?.toLowerCase(), 
-            difficulty: selectedDifficulties[0]?.toLowerCase()
-          }
-        }
+          collab: { topic, difficulty },
+        },
       });
     });
 
@@ -72,21 +105,15 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  const toggleDifficulty = (difficulty: string) => {
-    setSelectedDifficulties((prev) =>
-      prev.includes(difficulty)
-        ? prev.filter((d) => d !== difficulty)
-        : [...prev, difficulty]
-    );
-  };
-
-  const toggleTopic = (topic: string) => {
-    setSelectedTopics((prev) =>
-      prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]
-    );
-  };
-
-  const canFindMatch = selectedDifficulties.length > 0 && selectedTopics.length > 0;
+    const onSelectTopic = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setSelectedTopic(e.target.value);
+    };
+    
+    const onSelectDifficulty = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setSelectedDifficulty(e.target.value);
+    };
+    
+    const canFindMatch = Boolean(selectedTopic) && Boolean(selectedDifficulty);
 
   const handleFindMatch = () => {
     if (!user || !socketRef.current) return;
@@ -96,8 +123,8 @@ export default function Dashboard() {
     socketRef.current.emit("find_match", {
       userId: user.sub,
       email: user.email,
-      difficulties: selectedDifficulties,
-      topics: selectedTopics,
+      difficulties: [selectedDifficulty],
+      topics: [selectedTopic],
     });
   };
 
@@ -235,36 +262,38 @@ export default function Dashboard() {
           <h1>Welcome, {user?.displayName}</h1>
         </div>
 
-        <div style={{ marginBottom: "2rem" }}>
-          <h2>Select Difficulty</h2>
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            {DIFFICULTIES.map((difficulty) => (
-              <label key={difficulty} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={selectedDifficulties.includes(difficulty)}
-                  onChange={() => toggleDifficulty(difficulty)}
-                />
-                <span>{difficulty}</span>
-              </label>
+        <div style={{ marginBottom: "2rem", textAlign: "left" }}>
+          <h2>Select Topic</h2>
+          <select
+            value={selectedTopic}
+            onChange={onSelectTopic}
+            style={{ padding: "0.5rem", minWidth: 240 }}
+          >
+            <option value="">— Choose a topic —</option>
+            {topics.map((t) => (
+              <option key={t} value={t}>{t}</option>
             ))}
-          </div>
+          </select>
         </div>
 
-        <div style={{ marginBottom: "2rem" }}>
-          <h2>Select Topics</h2>
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            {TOPICS.map((topic) => (
-              <label key={topic} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={selectedTopics.includes(topic)}
-                  onChange={() => toggleTopic(topic)}
-                />
-                <span>{topic}</span>
-              </label>
+        <div style={{ marginBottom: "2rem", textAlign: "left" }}>
+          <h2>Select Difficulty</h2>
+          <select
+            value={selectedDifficulty}
+            onChange={onSelectDifficulty}
+            disabled={!selectedTopic} // enable only after topic chosen
+            style={{ padding: "0.5rem", minWidth: 240 }}
+          >
+            <option value="">— Choose a difficulty —</option>
+            {difficulties.map((d) => (
+              <option key={d} value={d}>{d}</option>
             ))}
-          </div>
+          </select>
+          {!selectedTopic && (
+            <div style={{ fontSize: 12, color: "#666", marginTop: 8 }}>
+              Select a topic to see available difficulties.
+            </div>
+          )}
         </div>
 
         {statusMessage && (

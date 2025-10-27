@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const { createServer } = require('node:http');
 const { Server } = require('socket.io');
+const roomState = new Map(); // roomId -> { question, topic, difficulty }
+const roomInitPromise = new Map();
 
 const PORT = Number(process.env.PORT) || 4004;
 
@@ -37,33 +39,23 @@ function broadcastPresence(io, roomId) {
 }
 
 async function requestQuestion(url) {
-  console.log('[Collab] Question fetch →', url);
-  const res = await fetch(url);
-
-  // Handle error codes
-  if (!res.ok) {
-    if (res.status === 404) return null; // Try the next URL in the fallback chain
-    const body = await res.text().catch(() => '');
-    throw new Error(`Question Service error ${res.status}: ${body}`);
-  }
-
-  // Parse and return the JSON body
+  const res = await fetch(url, { headers: { "Accept": "application/json" } });
+  if (!res.ok) return null;        // treat non-2xx as "no question"
   return await res.json();
 }
 
 async function fetchQuestion({ topic, difficulty }) {
   const baseUrl = process.env.QUESTION_SERVICE_URL || "http://localhost:4003";
 
-  // Try most specific → least specific
   const urls = [];
   if (topic && difficulty) {
-    urls.push(`${baseUrl}/api/question_service/random/topic/${enc(topic)}/difficulty/${enc(difficulty)}`);
+    urls.push(`${baseUrl}/api/question_service/random/topic/${encodeURIComponent(topic)}/difficulty/${encodeURIComponent(difficulty)}`);
   }
   if (topic) {
-    urls.push(`${baseUrl}/api/question_service/random/topic/${enc(topic)}`);
+    urls.push(`${baseUrl}/api/question_service/random/topic/${encodeURIComponent(topic)}`);
   }
   if (difficulty) {
-    urls.push(`${baseUrl}/api/question_service/random/difficulty/${enc(difficulty)}`);
+    urls.push(`${baseUrl}/api/question_service/random/difficulty/${encodeURIComponent(difficulty)}`);
   }
   urls.push(`${baseUrl}/api/question_service/random`);
 
@@ -71,12 +63,40 @@ async function fetchQuestion({ topic, difficulty }) {
     try {
       const q = await requestQuestion(url);
       if (q) return q;
-      console.log(q)
+      console.warn("[Collab] Question Service returned empty for", url);
     } catch (err) {
-      console.warn('[Collab] fetch attempt failed:', err?.message || err);
+      console.warn("[Collab] fetch attempt failed:", url, err?.message || err);
     }
   }
   return null;
+}
+
+async function ensureRoomQuestion(roomId, topic, difficulty) {
+  // If already initialized, return it.
+  const existing = roomState.get(roomId);
+  if (existing?.question) return existing.question;
+
+  // If someone else is initializing, await the same promise.
+  let p = roomInitPromise.get(roomId);
+  if (!p) {
+    // Make a single initializer promise and store it immediately to avoid races.
+    p = (async () => {
+      try {
+        const q = await fetchQuestion({ topic, difficulty }); // your function
+        roomState.set(roomId, {
+          question: q, topic, difficulty, initAt: Date.now()
+        });
+        return q;
+      } finally {
+        // Always clear the init promise so future re-joins don’t await an old one.
+        roomInitPromise.delete(roomId);
+      }
+    })();
+
+    roomInitPromise.set(roomId, p);
+  }
+
+  return p; // all concurrent joiners await this
 }
 
 io.on('connection', (socket) => {
@@ -89,7 +109,7 @@ io.on('connection', (socket) => {
 
     const participants = getParticipants(io, roomId);
 
-    const q = await fetchQuestion({ topic, difficulty });
+    const q = await ensureRoomQuestion(roomId, topic, difficulty);
     let normalized = null;
 
     if (q) {
