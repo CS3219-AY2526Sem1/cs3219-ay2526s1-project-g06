@@ -1,77 +1,75 @@
+require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const { createServer } = require('node:http');
 const { Server } = require('socket.io');
 
+const PORT = Number(process.env.PORT) || 4004;
+
 const app = express();
-const server = createServer(app);
+app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
 
-// Configure CORS based on environment
-const getCorsOrigins = () => {
-  if (process.env.NODE_ENV === 'production') {
-    const origins = [];
-    if (process.env.CORS_ORIGIN) origins.push(process.env.CORS_ORIGIN);
-    origins.push('https://d34n3c7d9pxc7j.cloudfront.net');
-    return origins;
-  } else {
-    // Development origins
-    return [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174'
-    ];
-  }
-};
+app.get('/ready', (req, res) => res.json({ status: 'ok' }));
 
-const io = new Server(server, {
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
   cors: {
-    origin: getCorsOrigins(),
-    credentials: true,
-  },
-  path: "/collab/socket.io/",
+    origin: ['http://localhost:5173'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
 });
+
+function getParticipants(io, roomId) {
+  const room = io.sockets.adapter.rooms.get(roomId);
+  if (!room) return [];
+  const ids = Array.from(room); // socket ids
+  return ids.map((sid) => {
+    const s = io.sockets.sockets.get(sid);
+    return s?.data?.user || { userId: sid };
+  });
+}
+
+function broadcastPresence(io, roomId) {
+  const participants = getParticipants(io, roomId);
+  io.to(roomId).emit('presence:update', { participants });
+}
 
 io.on('connection', (socket) => {
-  let currRoom;
-  console.log('a user connected');
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
-  socket.on('codespace change', (text) => {
-    console.log(`sending ${currRoom} ${text}`);
-    io.to(currRoom).emit('codespace change', text);
-  });
+  socket.on('join_room', (payload = {}, ack) => {
+    const { roomId, user } = payload;
+    if (!roomId) return;
 
-  socket.on('join-room', (room) => {
-    socket.join(room);
-    currRoom = room;
-    console.log('user joined ' + room);
-    console.log("rooms in: ");
-    socket.rooms.forEach(room => {
-        if (room !== socket.id) {
-          console.log(room);
-            }
-    });
-  });
-  socket.on('leave-room', (room) => {
-    if (!currRoom) {
-      return;
+    socket.data.user = user || { userId: socket.id };
+    socket.join(roomId);
+
+    // Build current presence
+    const participants = getParticipants(io, roomId);
+
+    // ACK back to the joining client immediately
+    if (typeof ack === 'function') {
+      ack({
+        question: { title: 'Test question', prompt: 'Hello world' },
+        code: '',
+        participants
+      });
     }
-    console.log("rooms in: ");
-    socket.rooms.forEach(room => {
-        if (room !== socket.id) {
-          console.log(room);
-              socket.leave(room);
-            }
-    });
-    //socket.leave(room);
-    //console.log('user left ' + room);
+
+    // And still emit the normal events (nice to have)
+    socket.emit('collab:init', { question: { title: 'Test question', prompt: 'Hello world' }, code: '', participants });
+    broadcastPresence(io, roomId);
+  });
+
+  socket.on('codespace:change', ({ roomId, code, clientTs }) => {
+    if (!roomId) return;
+    socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
   });
 });
 
-server.listen(4004, () => {
-  console.log('server running at http://localhost:4004');
-  //console.log(process.env.CORS_ORIGIN);
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`[Collab] listening on http://localhost:${PORT}`);
 });
+
+
+

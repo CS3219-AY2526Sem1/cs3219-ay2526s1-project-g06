@@ -1,82 +1,46 @@
-import React, {useEffect, useRef, useState} from "react";
-import {io, Socket} from "socket.io-client";
+import { useLocation } from "react-router-dom";
+import CollabComponent, { Question } from "../components/CollabComponent";
 
-// Configure collab service URL based on environment
-const getCollabUrl = () => {
-  // Use direct service URL if available (for local development)
-  if (import.meta.env.VITE_COLLAB_SERVICE_URL) {
-    return import.meta.env.VITE_COLLAB_SERVICE_URL;
-  }
-  // Otherwise use backend URL for production (via Nginx)
-  return import.meta.env.VITE_BACKEND_URL || `https://${window.location.hostname}`;
+/**
+ * This page expects to be navigated to by the Matching flow:
+ * navigate("/collab", { state: matchPayload })
+ * where matchPayload looks like:
+ * {
+ *   roomId: string,
+ *   partner: { userId: string, email?: string },
+ *   collab: {
+ *     wsUrl?: string, wsPath?: string, token?: string,
+ *     topic?: string, difficulty?: string, question?: Question
+ *   }
+ * }
+ */
+type MatchPayload = {
+  roomId: string;
+  partner: { userId: string; email?: string };
+  collab: {
+    wsUrl?: string;
+    wsPath?: string;
+    token?: string;
+    topic?: string;
+    difficulty?: string;
+    question?: Question;
+  };
 };
 
-const CollabComponent = () => {
-  const [codespaceContent, setCodespaceContent] = useState("");
-  const [currRoom, setCurrRoom] = useState("");
-  const socketRef = useRef<Socket | null>(null);
+export default function Collab() {
+  const location = useLocation();
+  const match = location.state as MatchPayload | null;
 
-  useEffect(() => {
-    const collabUrl = getCollabUrl();
-    const socketPath = import.meta.env.VITE_COLLAB_SERVICE_URL ? "/socket.io/" : "/collab/socket.io/";
+  if (!match) return null;
 
-    console.log('Connecting to collab service:', collabUrl, 'with path:', socketPath);
-    const socket = io(collabUrl, {path: socketPath});
-    socketRef.current = socket;
-    
-    socket.on('codespace change', (text: string) => {
-      setCodespaceContent(text);
-        })
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
+  const { roomId, collab } = match;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setCodespaceContent(newText);
-    if (socketRef.current) {
-      if (currRoom) {
-        socketRef.current.emit('codespace change', newText);
-      }
-    }
-  }
-
-  const handleRoomChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log(e.target.value);
-    if (!socketRef.current) {
-      return;
-    }
-		if (currRoom) {
-	    socketRef.current.emit("leave-room", currRoom);
-	  }
-	
-	  setCurrRoom(e.target.value);
-	  socketRef.current.emit("join-room", e.target.value);
-  }
-  
   return (
-    <div className="collab-container">
-      <h1>Collaborative Codespace</h1>
-      <h2>{currRoom}</h2>
-      <textarea
-        id="roomdId" 
-        onChange={handleRoomChange}
-        rows={1} 
-        cols={8}
-      />
-      <textarea
-        id="codespace" 
-        value={codespaceContent}
-        onChange={handleInputChange}
-        rows={10} 
-        cols={80}
-        style={{ width: '100%', minHeight: '300px' }}
-      />
-    </div>
+    <CollabComponent
+      roomId={roomId}
+      token={collab.token}
+      topic={collab.topic}
+      difficulty={collab.difficulty}
+    />
   );
-};
-
-export default CollabComponent;
+}

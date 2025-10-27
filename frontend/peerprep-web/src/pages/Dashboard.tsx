@@ -29,9 +29,6 @@ export default function Dashboard() {
   const socketRef = useRef<Socket | null>(null);
 
   const navigate = useNavigate();
-  const goCollab = () => {
-    navigate('/collab');
-  };
 
   useEffect(() => {
     // Connect to matching service
@@ -52,6 +49,17 @@ export default function Dashboard() {
       setIsSearching(false);
       setMatchFound(match);
       setStatusMessage(`Matched with ${match.user1.userId === user?.sub ? match.user2.email : match.user1.email}!`);
+    
+      // Navigate to /collab and pass the payload the Collab page needs
+      navigate("/collab", {
+        state: {
+          roomId: match.roomId,
+          collab: {
+            topic: selectedTopics[0]?.toLowerCase(), 
+            difficulty: selectedDifficulties[0]?.toLowerCase()
+          }
+        }
+      });
     });
 
     socketRef.current.on("match_cancelled", (data) => {
@@ -325,20 +333,6 @@ export default function Dashboard() {
             Cancel Search
           </button>
         )}
-          <button
-            onClick={goCollab}
-            style={{
-              padding: "0.75rem 2rem",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              backgroundColor: canFindMatch ? "#4CAF50" : "#ccc",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-            }}
-          >
-            Collab
-          </button>
       </main>
 
       {/* Delete Confirmation Modal */}
