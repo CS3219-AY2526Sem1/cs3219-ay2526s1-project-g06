@@ -1,13 +1,25 @@
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [imageError, setImageError] = useState(false);
 
   if (!user) {
     return <div>Loading...</div>;
   }
+
+  // Debug: Log the photoURL
+  console.log('👤 Profile: User data:', {
+    email: user.email,
+    displayName: user.displayName,
+    photoURL: user.photoURL,
+    photoURLLength: user.photoURL?.length
+  });
+
+  const showInitials = !user.photoURL || user.photoURL.trim() === '' || imageError;
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh' }}>
@@ -94,26 +106,7 @@ const Profile = () => {
               justifyContent: 'center',
               marginBottom: '2rem'
             }}>
-              {user.photoURL && user.photoURL.trim() !== '' ? (
-                  <img 
-                      src={user.photoURL} 
-                      alt="Profile" 
-                      style={{
-                          width: '80px',
-                          height: '80px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '3px solid #e5e7eb'
-                      }}
-                      onLoad={() => console.log('✅ Image loaded successfully!')}
-                      onError={(e) => {
-                          console.log('❌ Image failed to load');
-                           // Hide the broken image and show initials
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                      }}
-                />
-              ) : (
+              {showInitials ? (
                 <div style={{
                   width: '80px',
                   height: '80px',
@@ -129,6 +122,29 @@ const Profile = () => {
                 }}>
                   {user.displayName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                 </div>
+              ) : (
+                <img 
+                  src={user.photoURL} 
+                  alt="Profile"
+                  referrerPolicy="no-referrer"  
+                  crossOrigin="anonymous"        
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '3px solid #e5e7eb'
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Profile image loaded successfully!');
+                    console.log('📸 Image URL:', user.photoURL);
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Profile image failed to load');
+                    console.error('📸 Failed URL:', user.photoURL);
+                    setImageError(true);
+                  }}
+                />
               )}
             </div>
 

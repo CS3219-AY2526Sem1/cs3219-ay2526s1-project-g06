@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const EditProfile = () => {
-  const { user, setUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   // Form state
@@ -43,12 +43,7 @@ const EditProfile = () => {
       const data = await response.json();
       
       // Update user in AuthContext
-      setUser({
-        ...user,
-        displayName: data.user.displayName,
-        bio: data.user.bio,
-        language: data.user.language
-      });
+      await refreshUser();
 
       // Navigate back to profile
       navigate('/profile');
@@ -148,6 +143,8 @@ const EditProfile = () => {
               {user.photoURL && user.photoURL.trim() !== '' ? (
                 <img 
                   src={user.photoURL} 
+                  referrerPolicy="no-referrer"
+                  crossOrigin='anonymous'
                   alt="Profile" 
                   style={{
                     width: '80px',
