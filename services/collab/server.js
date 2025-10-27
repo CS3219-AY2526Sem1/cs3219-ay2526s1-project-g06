@@ -36,28 +36,90 @@ function broadcastPresence(io, roomId) {
   io.to(roomId).emit('presence:update', { participants });
 }
 
+async function requestQuestion(url) {
+  console.log('[Collab] Question fetch →', url);
+  const res = await fetch(url);
+
+  // Handle error codes
+  if (!res.ok) {
+    if (res.status === 404) return null; // Try the next URL in the fallback chain
+    const body = await res.text().catch(() => '');
+    throw new Error(`Question Service error ${res.status}: ${body}`);
+  }
+
+  // Parse and return the JSON body
+  return await res.json();
+}
+
+async function fetchQuestion({ topic, difficulty }) {
+  const baseUrl = process.env.QUESTION_SERVICE_URL || "http://localhost:4003";
+
+  // Try most specific → least specific
+  const urls = [];
+  if (topic && difficulty) {
+    urls.push(`${baseUrl}/api/question_service/random/topic/${enc(topic)}/difficulty/${enc(difficulty)}`);
+  }
+  if (topic) {
+    urls.push(`${baseUrl}/api/question_service/random/topic/${enc(topic)}`);
+  }
+  if (difficulty) {
+    urls.push(`${baseUrl}/api/question_service/random/difficulty/${enc(difficulty)}`);
+  }
+  urls.push(`${baseUrl}/api/question_service/random`);
+
+  for (const url of urls) {
+    try {
+      const q = await requestQuestion(url);
+      if (q) return q;
+      console.log(q)
+    } catch (err) {
+      console.warn('[Collab] fetch attempt failed:', err?.message || err);
+    }
+  }
+  return null;
+}
+
 io.on('connection', (socket) => {
-  socket.on('join_room', (payload = {}, ack) => {
-    const { roomId, user } = payload;
+  socket.on('join_room', async (payload = {}, ack) => {
+    const { roomId, user, topic, difficulty } = payload;
     if (!roomId) return;
 
     socket.data.user = user || { userId: socket.id };
     socket.join(roomId);
 
-    // Build current presence
     const participants = getParticipants(io, roomId);
 
-    // ACK back to the joining client immediately
+    const q = await fetchQuestion({ topic, difficulty });
+    let normalized = null;
+
+    if (q) {
+      normalized = {
+        id: q._id || q.id || 'unknown',
+        title: q.title || q.name || 'Untitled',
+        description: q.description || q.prompt || '',
+        topic: q.topic || topic || 'N/A',
+        difficulty: q.difficulty || difficulty || 'N/A',
+      };
+    } else {
+      normalized = {
+        id: 'placeholder',
+        title: 'No matching question found',
+        description: `We couldn't find a question for topic="${topic || '-'}" and difficulty="${difficulty || '-'}".`,
+        topic: topic || 'N/A',
+        difficulty: difficulty || 'N/A',
+      };
+    }
+
+    // Send the question to the client
     if (typeof ack === 'function') {
       ack({
-        question: { title: 'Test question', prompt: 'Hello world' },
+        question: normalized,
         code: '',
-        participants
+        participants,
       });
     }
 
-    // And still emit the normal events (nice to have)
-    socket.emit('collab:init', { question: { title: 'Test question', prompt: 'Hello world' }, code: '', participants });
+    socket.emit('collab:init', { question: normalized, code: '', participants });
     broadcastPresence(io, roomId);
   });
 
