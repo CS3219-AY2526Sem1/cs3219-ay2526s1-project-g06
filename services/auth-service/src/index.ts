@@ -157,6 +157,44 @@ app.post("/auth/session", async (req, res) => {
   }
 });
 
+// GET CURRENT USER - Returns user info from session cookie
+app.get("/auth/me", async (req, res) => {
+  try {
+    const sessionCookie = req.cookies.session;
+
+    if (!sessionCookie) {
+      return res.status(401).json({ error: "No session found" });
+    }
+
+    console.log('🔍 Auth Service: Getting user from session...');
+
+    // Verify the session cookie
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+
+    // Fetch full user data from Firebase
+    const userRecord = await auth.getUser(decodedClaims.uid);
+
+    console.log('✅ Auth Service: User data retrieved for:', decodedClaims.uid);
+
+    // Return user info (frontend expects this structure)
+    res.json({
+      user: {
+        uid: userRecord.uid,
+        email: userRecord.email,
+        displayName: userRecord.displayName || null,
+        photoURL: userRecord.photoURL || null,
+        // Additional fields that might be in custom claims
+        bio: decodedClaims.bio || null,
+        language: decodedClaims.language || null,
+        profileCompleted: decodedClaims.profileCompleted || false,
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Auth Service: Failed to get user:', error.message);
+    res.status(401).json({ error: "Invalid or expired session" });
+  }
+});
+
 // REVOKE SESSION
 app.post("/auth/revoke", async (req, res) => {
   try {
