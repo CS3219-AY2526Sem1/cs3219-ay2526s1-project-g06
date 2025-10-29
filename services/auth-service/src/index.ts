@@ -223,8 +223,8 @@ app.put("/auth/profile", async (req, res) => {
     }
 
     // Set custom claims for bio, language, and profileCompleted
+    // Only include custom claim fields (not reserved Firebase fields)
     const customClaims = {
-      ...decodedClaims,
       bio: bio || decodedClaims.bio || null,
       language: language || decodedClaims.language || null,
       profileCompleted: true, // Mark profile as completed
