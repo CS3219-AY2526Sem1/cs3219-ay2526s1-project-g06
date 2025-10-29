@@ -195,6 +195,66 @@ app.get("/auth/me", async (req, res) => {
   }
 });
 
+// UPDATE PROFILE - Updates user profile information
+app.put("/auth/profile", async (req, res) => {
+  try {
+    const sessionCookie = req.cookies.session;
+
+    if (!sessionCookie) {
+      return res.status(401).json({ error: "No session found" });
+    }
+
+    const { displayName, bio, language } = req.body;
+
+    console.log('🔍 Auth Service: Updating user profile...');
+
+    // Verify the session cookie
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const uid = decodedClaims.uid;
+
+    // Update Firebase user profile (displayName)
+    const updateData: any = {};
+    if (displayName !== undefined) {
+      updateData.displayName = displayName;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await auth.updateUser(uid, updateData);
+    }
+
+    // Set custom claims for bio, language, and profileCompleted
+    const customClaims = {
+      ...decodedClaims,
+      bio: bio || decodedClaims.bio || null,
+      language: language || decodedClaims.language || null,
+      profileCompleted: true, // Mark profile as completed
+    };
+
+    await auth.setCustomUserClaims(uid, customClaims);
+
+    console.log('✅ Auth Service: Profile updated for user:', uid);
+
+    // Fetch updated user data
+    const userRecord = await auth.getUser(uid);
+
+    // Return updated user info
+    res.json({
+      user: {
+        uid: userRecord.uid,
+        email: userRecord.email,
+        displayName: userRecord.displayName || null,
+        photoURL: userRecord.photoURL || null,
+        bio: bio || null,
+        language: language || null,
+        profileCompleted: true,
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Auth Service: Profile update failed:', error.message);
+    res.status(500).json({ error: "Failed to update profile", details: error.message });
+  }
+});
+
 // REVOKE SESSION
 app.post("/auth/revoke", async (req, res) => {
   try {
