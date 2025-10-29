@@ -69,6 +69,13 @@ jobs:
             echo "Debug - MONGO_URL length: ${#MONGO_URL}"
             echo "Debug - FIREBASE_JSON length: ${#FIREBASE_JSON}"
 
+            # Auth Service .env
+            echo "PORT=4000" > services/auth-service/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/auth-service/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/auth-service/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/auth-service/.env
+            echo "✓ Created services/auth-service/.env"
+
             # User Service .env
             echo "PORT=4001" > services/user/.env
             echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
@@ -170,9 +177,11 @@ jobs:
           echo "- **Status**: Success :white_check_mark:" >> $GITHUB_STEP_SUMMARY
           echo "- **EC2 Host**: ${{ secrets.EC2_HOST }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Services Deployed**:" >> $GITHUB_STEP_SUMMARY
+          echo "  - Auth Service (Port 4000)" >> $GITHUB_STEP_SUMMARY
           echo "  - User Service (Port 4001)" >> $GITHUB_STEP_SUMMARY
           echo "  - Matching Service (Port 4002)" >> $GITHUB_STEP_SUMMARY
           echo "  - Question Service (Port 4003)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Collab Service (Port 4004)" >> $GITHUB_STEP_SUMMARY
           echo "  - Nginx Reverse Proxy (Port 80)" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployed at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
