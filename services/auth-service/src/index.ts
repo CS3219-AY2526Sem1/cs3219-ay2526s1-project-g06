@@ -127,12 +127,19 @@ app.post("/auth/session", async (req, res) => {
       }
     }
 
-    res.cookie("session", sessionCookie, {
+    const cookieOptions: any = {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    });
+    };
+
+    // Add partitioned attribute for cross-site cookies (future Chrome requirement)
+    if (process.env.NODE_ENV === "production") {
+      cookieOptions.partitioned = true;
+    }
+
+    res.cookie("session", sessionCookie, cookieOptions);
 
     res.json({ 
       success: true,
