@@ -82,6 +82,7 @@ jobs:
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
             echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
             echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/user/.env
+            echo "AUTH_SERVICE_URL=http://auth-service:4000" >> services/user/.env
 
             echo "✓ Created services/user/.env"
 
