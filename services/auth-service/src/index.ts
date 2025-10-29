@@ -131,7 +131,7 @@ app.post("/auth/session", async (req, res) => {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     res.json({ 
