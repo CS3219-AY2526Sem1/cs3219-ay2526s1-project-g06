@@ -171,22 +171,23 @@ app.get("/auth/me", async (req, res) => {
     // Verify the session cookie
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
 
-    // Fetch full user data from Firebase
+    // Fetch full user data from Firebase (including fresh custom claims)
     const userRecord = await auth.getUser(decodedClaims.uid);
 
     console.log('✅ Auth Service: User data retrieved for:', decodedClaims.uid);
 
     // Return user info (frontend expects this structure)
+    // Use customClaims from userRecord (fresh from Firebase) instead of session cookie
     res.json({
       user: {
         uid: userRecord.uid,
         email: userRecord.email,
         displayName: userRecord.displayName || null,
         photoURL: userRecord.photoURL || null,
-        // Additional fields that might be in custom claims
-        bio: decodedClaims.bio || null,
-        language: decodedClaims.language || null,
-        profileCompleted: decodedClaims.profileCompleted || false,
+        // Get custom claims from userRecord (fresh) instead of decodedClaims (stale session)
+        bio: userRecord.customClaims?.bio || null,
+        language: userRecord.customClaims?.language || null,
+        profileCompleted: userRecord.customClaims?.profileCompleted || false,
       }
     });
   } catch (error: any) {
