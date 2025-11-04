@@ -32,6 +32,9 @@ export default function Dashboard() {
   const goCollab = () => {
     navigate('/collab');
   };
+  const goHistory = () => {
+    navigate('/history');
+  };
 
   useEffect(() => {
     // Connect to matching service
@@ -338,6 +341,20 @@ export default function Dashboard() {
             }}
           >
             Collab
+          </button>
+          <button
+            onClick={goHistory}
+            style={{
+              padding: "0.75rem 2rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              backgroundColor: canFindMatch ? "#4CAF50" : "#ccc",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+            }}
+          >
+           history 
           </button>
       </main>
 
