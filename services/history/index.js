@@ -36,9 +36,11 @@ async function startServer() {
     res.json("success");
   });
 
-  server.get("/", (req, res) => {
-    console.log("get request");
-    getQuestions().then((questions) => {
+  server.post("/question-history/get-questions", (req, res) => {
+    console.log(req.body);
+    const { userId } = req.body;
+    console.log(`get request from ${userId}`);
+    getQuestions(req.body).then((questions) => {
     res.json(questions);
     console.log("sent response");
     });
@@ -72,9 +74,9 @@ async function addQuestion(question) {
   console.log(questions);
 }
 
-async function getQuestions() {
+async function getQuestions(req) {
   console.log("getting question");
-  const questions = await QuestionHistory.find();
+  const questions = await QuestionHistory.find(req);
   console.log(questions);
   return questions;
 }

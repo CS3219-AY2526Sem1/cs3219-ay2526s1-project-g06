@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from "../auth/AuthContext";
 
-const QuestionHistoryComponent = () => {
+const QuestionHistoryComponent = ({ user }) => {
 
-  const { user, signOut } = useAuth();
+  const [currentUserId, setCurrentUserId] = useState(null);
+  // first load
+  useEffect(() => {
+    getQuestions(currentUserId);
+  }, []);
+  
+  // loading userid
+  useEffect(() => {
+    if (user?.sub) {
+      console.log(user);
+      setCurrentUserId(user.sub);
+      getQuestions(user.sub);
+    }
+  }, [user?.sub]);
 
   //temporary text of all questions
   const [allQuestions, setAllQuestions] = useState([]);
@@ -11,28 +24,36 @@ const QuestionHistoryComponent = () => {
   const [submittedSolution, setSubmittedSolution] = useState("");
   const [suggestedSolution, setSuggestedSolution] = useState("");
 
-  const getQuestions = () => {
-    fetch("http://localhost:12345", {
-      method: "GET",
+  const getQuestions = (id) => {
+    fetch("http://localhost:12345/question-history/get-questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({userId: id}),
     }).then((res) => res.json())
       .then((data) => setAllQuestions(data));
   };
+
   //one button to add question
   const addQuestion = () => {
+    if (currentUserId === null) {
+      return;
+    }
     fetch("http://localhost:12345", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: user ? user.sub : 1,
+        userId: currentUserId,
         question: questionText,
         submittedSolution: submittedSolution,
         suggestedSolution: suggestedSolution,
       }),
     }).then((res) => res.json())
       .then((data) => console.log(data))
-      .then(getQuestions);
+      .then(() => getQuestions(currentUserId));
 
     //reset values
     setQuestionText("");
@@ -51,6 +72,7 @@ const QuestionHistoryComponent = () => {
   });
 
   return <div>
+    <h1>Hello {currentUserId}</h1>
     <div>
       <button onClick={getQuestions}>Refresh</button>
     </div>

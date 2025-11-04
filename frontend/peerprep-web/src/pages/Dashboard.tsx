@@ -6,6 +6,8 @@ import { getAuth } from 'firebase/auth';
 
 import { useNavigate } from 'react-router-dom';
 
+import QuestionHistoryComponent from './QuestionHistory'
+
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const TOPICS = ["DP", "Math", "Linked List"];
 
@@ -356,6 +358,9 @@ export default function Dashboard() {
           >
            history 
           </button>
+
+        <QuestionHistoryComponent user={user} />
+
       </main>
 
       {/* Delete Confirmation Modal */}
