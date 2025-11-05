@@ -4,6 +4,7 @@ import cors from "cors";
 
 const server = express();
 const PORT = process.env.PORT || 4005;
+const MONGO_URL = process.env.MONGO_URL ? process.env.MONGO_URL | 'mongodb://127.0.0.1:27017/test';
 
 const getCorsOrigins = () => {
   if (process.env.NODE_ENV === 'production') {
@@ -50,6 +51,7 @@ const QuestionHistory = new mongoose.model("Question", questionHistorySchema);
 async function startServer() {
   try {
     console.log("attempting to connect");
+    await mongoose.connect(MONGO_URL);
     console.log("connected to ", mongoose.connection.host);
     console.log("db name ", mongoose.connection.name);
   } catch (err) {
