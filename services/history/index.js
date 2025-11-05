@@ -50,8 +50,6 @@ const QuestionHistory = new mongoose.model("Question", questionHistorySchema);
 async function startServer() {
   try {
     console.log("attempting to connect");
-    //await mongoose.connect('mongodb://127.0.0.1:27017/test');
-    await mongoose.connect('mongodb+srv://dbUser:dbUserPassword@peer-prep.tptxv6n.mongodb.net/peerprep-question-history?retryWrites=true&w=majority&appName=peer-prep');
     console.log("connected to ", mongoose.connection.host);
     console.log("db name ", mongoose.connection.name);
   } catch (err) {
