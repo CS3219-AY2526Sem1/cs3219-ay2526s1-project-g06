@@ -51,7 +51,7 @@ services:
       - ./services/collab/.env
     restart: unless-stopped
 
-  collab-service:
+  question-history-service:
     build: ./services/history
     ports:
       - "4005:4005"
