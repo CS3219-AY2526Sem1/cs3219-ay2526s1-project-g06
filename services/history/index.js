@@ -3,8 +3,36 @@ import mongoose from "mongoose";
 import cors from "cors";
 
 const server = express();
+const PORT = process.env.PORT || 4005;
+
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    const origins = [];
+    if (process.env.CORS_ORIGIN) origins.push(process.env.CORS_ORIGIN);
+    origins.push('https://d34n3c7d9pxc7j.cloudfront.net');
+    return origins;
+  } else {
+    // Development origins
+    return [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174'
+    ];
+  }
+};
 server.use(cors({
-  origin: "http://localhost:5173",
+  origin: (origin, callback) => {
+    const allowedOrigins = getCorsOrigins();
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 server.use(express.json());
@@ -21,16 +49,19 @@ const QuestionHistory = new mongoose.model("Question", questionHistorySchema);
 
 async function startServer() {
   try {
-    await mongoose.connect('mongodb://127.0.0.1:27017/test');
-    console.log("connected");
+    console.log("attempting to connect");
+    //await mongoose.connect('mongodb://127.0.0.1:27017/test');
+    await mongoose.connect('mongodb+srv://dbUser:dbUserPassword@peer-prep.tptxv6n.mongodb.net/peerprep-question-history?retryWrites=true&w=majority&appName=peer-prep');
+    console.log("connected to ", mongoose.connection.host);
+    console.log("db name ", mongoose.connection.name);
   } catch (err) {
     console.log("can't connect " + err);
   }
   
-  server.listen(12345, () => {
+  server.listen(PORT, () => {
     console.log("hi");
   });
-  server.post("/", (req, res) => {
+  server.post("/question-history/add-question", (req, res) => {
     console.log("post request");
     addQuestion(req.body);
     res.json("success");
@@ -62,7 +93,7 @@ async function startServer() {
   console.log(questions);
 
   // remove all
-  await QuestionHistory.deleteMany();
+//  await QuestionHistory.deleteMany();
 }
 
 async function addQuestion(question) {

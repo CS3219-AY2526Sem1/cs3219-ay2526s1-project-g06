@@ -41,6 +41,16 @@ services:
       - ./services/collab/.env
     restart: unless-stopped
 
+  collab-service:
+    build: ./services/history
+    ports:
+      - "4005:4005"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./services/history/.env
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:

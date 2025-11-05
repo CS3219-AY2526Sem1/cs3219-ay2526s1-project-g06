@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from "../auth/AuthContext";
 
+const BASE = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:4005`;
+
 const QuestionHistoryComponent = ({ user }) => {
 
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -25,8 +27,10 @@ const QuestionHistoryComponent = ({ user }) => {
   const [suggestedSolution, setSuggestedSolution] = useState("");
 
   const getQuestions = (id) => {
-    fetch("http://localhost:12345/question-history/get-questions", {
+    console.log(`fetching ${BASE}/question-history/get-questions`);
+    fetch(`${BASE}/question-history/get-questions`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -40,8 +44,9 @@ const QuestionHistoryComponent = ({ user }) => {
     if (currentUserId === null) {
       return;
     }
-    fetch("http://localhost:12345", {
+    fetch(`${BASE}/question-history/add-question`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
