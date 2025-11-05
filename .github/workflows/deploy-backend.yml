@@ -108,6 +108,13 @@ jobs:
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
 
+            # Question History Service .env
+            echo "PORT=4005" > services/history/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/history/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/history/.env
+            echo "MONGO_URL=${MONGO_URL_QUESTION_HISTORY}" >> services/history/.env
+            echo "✓ Created services/history/.env"
+
             # Clean up the temporary Firebase JSON file
             rm -f /tmp/firebase.json
 

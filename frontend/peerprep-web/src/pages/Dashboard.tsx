@@ -6,6 +6,8 @@ import { getAuth } from 'firebase/auth';
 
 import { useNavigate } from 'react-router-dom';
 
+import QuestionHistoryComponent from './QuestionHistory'
+
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 const TOPICS = ["DP", "Math", "Linked List"];
 
@@ -31,6 +33,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const goCollab = () => {
     navigate('/collab');
+  };
+  const goHistory = () => {
+    navigate('/history');
   };
 
   useEffect(() => {
@@ -339,6 +344,23 @@ export default function Dashboard() {
           >
             Collab
           </button>
+          <button
+            onClick={goHistory}
+            style={{
+              padding: "0.75rem 2rem",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              backgroundColor: canFindMatch ? "#4CAF50" : "#ccc",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+            }}
+          >
+           history 
+          </button>
+
+        <QuestionHistoryComponent user={user} />
+
       </main>
 
       {/* Delete Confirmation Modal */}
