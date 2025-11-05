@@ -16,7 +16,7 @@ type User = {
   [key: string]: any;
 }
 type QuestionHistoryProps = {
-  user?: User;
+  user?: User | null;
 };
 
 const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
@@ -37,7 +37,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
   }, [user?.sub]);
 
   //temporary text of all questions
-  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
+  const [allQuestions, setAllQuestions] = useState<QuestionHistory[]>([]);
   const [questionText, setQuestionText] = useState<string>("");
   const [submittedSolution, setSubmittedSolution] = useState<string>("");
   const [suggestedSolution, setSuggestedSolution] = useState<string>("");
@@ -55,7 +55,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
       },
       body: JSON.stringify({userId: id}),
     }).then((res) => res.json())
-      .then((data: Question[]) => setAllQuestions(data));
+      .then((data: QuestionHistory[]) => setAllQuestions(data));
   };
 
   //one button to add question
@@ -85,7 +85,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
     setSuggestedSolution("");
   };
 
-  const allQuestionsList = allQuestions.map((question) => {
+  const allQuestionsList = allQuestions.map((question: QuestionHistory) => {
     return <tr key={question._id}>
         <th>{question.question}</th>
         <th>{question.submittedSolution}</th>
@@ -97,10 +97,6 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
 
   return <div>
     <h1>Hello {currentUserId}</h1>
-    <div>
-      <button onClick={getQuestions}>Refresh</button>
-    </div>
-    
     <table>
       <thead>
         <tr>
