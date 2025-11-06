@@ -65,7 +65,7 @@ type CollabProps = {
 };
 
 /** ----- Small debounce helper ----- */
-function debounce<T extends (...args: unknown[]) => void>(fn: T, wait = 50) {
+function debounce<T extends (...args: any[]) => void>(fn: T, wait = 50) {
   let t: ReturnType<typeof setTimeout> | null = null;
   return (...args: Parameters<T>) => {
     if (t) clearTimeout(t);
