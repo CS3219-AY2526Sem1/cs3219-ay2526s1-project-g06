@@ -6,6 +6,8 @@ import { getAuth } from 'firebase/auth';
 
 import { useNavigate } from 'react-router-dom';
 
+import QuestionHistoryComponent from './QuestionHistory'
+
 // Resolve Question Service base URL
 const getQuestionBase = () =>
   import.meta.env.VITE_QUESTION_SERVICE_URL || "http://localhost:4003/api/question_service";
@@ -23,6 +25,9 @@ async function fetchDifficultiesForTopic(topic: string): Promise<string[]> {
   return res.json();
 }
 
+
+const DIFFICULTIES = ["Easy", "Medium", "Hard"];
+const TOPICS = ["DP", "Math", "Linked List"];
 
 interface Match {
   roomId: string;
@@ -362,6 +367,7 @@ export default function Dashboard() {
             Cancel Search
           </button>
         )}
+        <QuestionHistoryComponent user={user} />
       </main>
 
       {/* Delete Confirmation Modal */}

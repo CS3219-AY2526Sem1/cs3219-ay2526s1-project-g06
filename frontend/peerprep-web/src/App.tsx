@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProfileSetup from './pages/ProfileSetup'; 
 import Collab from './pages/Collab';
+import QuestionHistory from './pages/QuestionHistory';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import './App.css';
@@ -36,6 +37,7 @@ function AppRoutes() {
       <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
       <Route path="/collab" element={<Collab />} />
+      <Route path="/history" element={<QuestionHistory />} />
       <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
       <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
       <Route path="/profile/edit" element={user ? <EditProfile /> : <Navigate to="/login" />} />

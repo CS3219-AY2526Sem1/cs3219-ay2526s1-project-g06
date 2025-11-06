@@ -1,6 +1,16 @@
 version: '3.8'
 
 services:
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./services/auth-service/.env
+    restart: unless-stopped
+
   user-service:
     build: ./services/user
     ports:
@@ -41,6 +51,16 @@ services:
       - ./services/collab/.env
     restart: unless-stopped
 
+  question-history-service:
+    build: ./services/history
+    ports:
+      - "4005:4005"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./services/history/.env
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
@@ -51,6 +71,7 @@ services:
       - ./frontend/peerprep-web/dist:/usr/share/nginx/html:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
+      - auth-service
       - user-service
       - matching-service
     restart: unless-stopped
