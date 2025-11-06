@@ -10,7 +10,7 @@ import QuestionHistoryComponent from './QuestionHistory'
 
 // Resolve Question Service base URL
 const getQuestionBase = () =>
-  import.meta.env.VITE_QUESTION_SERVICE_URL || "http://localhost:4003/api/question_service";
+  import.meta.env.VITE_BACKEND_URL ? import.meta.env.VITE_BACKEND_URL + ":4003/api/question_service" : "http://localhost:4003/api/question_service";
 
 // API helpers
 async function fetchTopics(): Promise<string[]> {
