@@ -8,8 +8,39 @@ const roomInitPromise = new Map();
 
 const PORT = Number(process.env.PORT) || 4004;
 
+const getCorsOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    const origins = [];
+    if (process.env.CORS_ORIGIN) origins.push(process.env.CORS_ORIGIN);
+    origins.push('https://d34n3c7d9pxc7j.cloudfront.net');
+    return origins;
+  } else {
+    // Development origins
+    return [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174'
+    ];
+  }
+};
+
 const app = express();
-app.use(cors({ origin: ['http://localhost:5173'], credentials: true }));
+
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowedOrigins = getCorsOrigins();
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 
 app.get('/ready', (req, res) => res.json({ status: 'ok' }));
 
