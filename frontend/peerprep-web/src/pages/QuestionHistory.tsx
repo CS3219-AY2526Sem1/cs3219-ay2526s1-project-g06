@@ -96,7 +96,6 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
   });
 
   return <div>
-    <h1>Hello {currentUserId}</h1>
     <table>
       <thead>
         <tr>
