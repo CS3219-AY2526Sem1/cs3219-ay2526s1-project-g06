@@ -79,7 +79,12 @@ function broadcastPresence(io, roomId) {
 
 async function requestQuestion(url) {
   const res = await fetch(url, { headers: { "Accept": "application/json" } });
-  if (!res.ok) return null;        // treat non-2xx as "no question"
+  if (!res.ok) {
+    console.error("Fetch failed: ", res.status, res.statusText);
+    const errText = await res.text();
+    console.error("Response: ", errText);
+    return null;        // treat non-2xx as "no question"
+  }
   return await res.json();
 }
 
