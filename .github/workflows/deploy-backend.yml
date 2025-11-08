@@ -29,6 +29,7 @@ jobs:
 
       - name: Deploy to EC2
         env:
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
           MONGO_URL: ${{ secrets.MONGO_URL }}
           MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
           MONGO_URL_QUESTION_HISTORY: ${{ secrets.MONGO_URL_QUESTION_HISTORY }}
@@ -47,6 +48,7 @@ jobs:
             set -e
 
             # Set environment variables from the GitHub runner
+            export VITE_BACKEND_URL: '${{ secrets.VITE_BACKEND_URL }}'
             export MONGO_URL='${{ secrets.MONGO_URL }}'
             export MONGO_URL_QUESTIONS='${{ secrets.MONGO_URL_QUESTIONS }}'
             export MONGO_URL_QUESTION_HISTORY='${{ secrets.MONGO_URL_QUESTION_HISTORY }}'
@@ -108,6 +110,7 @@ jobs:
             echo "PORT=4004" > services/collab/.env
             echo "NODE_ENV=${NODE_ENV}" >> services/collab/.env
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
+            echo "VITE_BACKEND_URL=${VITE_BACKEND_URL}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
 
             # Question History Service .env
