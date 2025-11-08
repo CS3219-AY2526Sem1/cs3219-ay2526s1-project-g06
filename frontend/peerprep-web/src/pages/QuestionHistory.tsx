@@ -42,6 +42,11 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
   const [submittedSolution, setSubmittedSolution] = useState<string>("");
   const [suggestedSolution, setSuggestedSolution] = useState<string>("");
 
+  //filters
+  const [questionTextFilter, setQuestionTextFilter] = useState<string>("");
+  const [submittedSolutionFilter, setSubmittedSolutionFilter] = useState<string>("");
+  const [suggestedSolutionFilter, setSuggestedSolutionFilter] = useState<string>("");
+
   const getQuestions = (id: string | null) => {
     if (id === null) {
       return;
@@ -103,8 +108,13 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
       .then(() => getQuestions(currentUserId));
   }
 
-  const allQuestionsList = allQuestions.map((question: QuestionHistory) => {
+  const allQuestionsList = allQuestions.filter((question: QuestionHistory) => {
+    return question.question.includes(questionTextFilter) &&
+           question.submittedSolution.includes(submittedSolutionFilter) &&
+           question.suggestedSolution.includes(suggestedSolutionFilter);
+  }).map((question: QuestionHistory) => {
     return <tr key={question._id}>
+        <td></td>
         <td>{question.question}</td>
         <td>{question.submittedSolution}</td>
         <td>{question.suggestedSolution}</td>
@@ -117,6 +127,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
     <table>
       <thead>
         <tr>
+          <th>Add question</th>
           <th>Question</th>
           <th>Submitted Solution</th>
           <th>Suggested Solution</th>
@@ -124,6 +135,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           <th>Go to button</th>
         </tr>
         <tr>
+          <th></th>
           <th>
             <textarea value={questionText} style={{resize: "none"}} onChange={(e) => setQuestionText(e.target.value)}></textarea>
           </th>
@@ -138,6 +150,26 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           </th>
           <th>
             <button onClick={addQuestion}>Add</button>
+          </th>
+        </tr>
+
+        {/*filtering*/}
+        <tr>
+          <th>
+            Filter
+          </th>
+          <th>
+            <textarea value={questionTextFilter} style={{resize: "none"}} onChange={(e) => setQuestionTextFilter(e.target.value)}></textarea>
+          </th>
+          <th>
+            <textarea value={submittedSolutionFilter} style={{resize: "none"}} onChange={(e) => setSubmittedSolutionFilter(e.target.value)}></textarea>
+          </th>
+          <th>
+            <textarea value={suggestedSolutionFilter} style={{resize: "none"}} onChange={(e) => setSuggestedSolutionFilter(e.target.value)}></textarea>
+          </th>
+          <th>
+          </th>
+          <th>
           </th>
         </tr>
       </thead>
