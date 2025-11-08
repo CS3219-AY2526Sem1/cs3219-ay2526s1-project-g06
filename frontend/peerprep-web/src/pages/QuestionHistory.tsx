@@ -85,7 +85,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
     setSuggestedSolution("");
   };
 
-  const deleteQuestion = (_id) => {
+  const deleteQuestion = (_id: string) => {
     if (currentUserId === null) {
       return;
     }
@@ -109,7 +109,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
         <td>{question.submittedSolution}</td>
         <td>{question.suggestedSolution}</td>
         <td>{question.date}</td>
-        <td><button onClick={() => deleteQuestion(question._id)}>This is a button</button></td>
+        <td><button onClick={() => deleteQuestion(question._id)}>delete</button></td>
       </tr>;
   });
 

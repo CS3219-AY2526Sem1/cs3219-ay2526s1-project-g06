@@ -76,8 +76,12 @@ async function startServer() {
     console.log("sent response");
     });
   })
-  
-  
+
+  server.post("/question-history/delete-question", (req, res) => {
+    console.log("post request");
+    deleteQuestion(req.body);
+    res.json("success");
+  });
   
   const testQuestion = new QuestionHistory({
     userId: "1",
@@ -110,6 +114,13 @@ async function getQuestions(req) {
   const questions = await QuestionHistory.find(req);
   console.log(questions);
   return questions;
+}
+
+async function deleteQuestion(question) {
+  await QuestionHistory.deleteOne(question);
+  console.log("deleted question");
+  const questions = await QuestionHistory.find();
+  console.log(questions);
 }
 
 startServer();
