@@ -89,7 +89,7 @@ async function requestQuestion(url) {
 }
 
 async function fetchQuestion({ topic, difficulty }) {
-  const baseUrl = process.env.VITE_BACKEND_URL || "http://localhost:4003";
+  const baseUrl = process.env.QUESTION_SERVICE_URL || "http://localhost:4003";
 
   const urls = [];
   if (topic && difficulty) {
