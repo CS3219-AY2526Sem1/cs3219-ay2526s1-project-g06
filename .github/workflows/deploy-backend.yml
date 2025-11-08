@@ -48,7 +48,7 @@ jobs:
             set -e
 
             # Set environment variables from the GitHub runner
-            export VITE_BACKEND_URL: '${{ secrets.VITE_BACKEND_URL }}'
+            export VITE_BACKEND_URL='${{ secrets.VITE_BACKEND_URL }}'
             export MONGO_URL='${{ secrets.MONGO_URL }}'
             export MONGO_URL_QUESTIONS='${{ secrets.MONGO_URL_QUESTIONS }}'
             export MONGO_URL_QUESTION_HISTORY='${{ secrets.MONGO_URL_QUESTION_HISTORY }}'
