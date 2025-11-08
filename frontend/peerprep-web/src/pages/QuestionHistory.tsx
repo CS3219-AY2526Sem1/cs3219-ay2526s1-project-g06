@@ -85,18 +85,35 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
     setSuggestedSolution("");
   };
 
+  const deleteQuestion = (_id) => {
+    if (currentUserId === null) {
+      return;
+    }
+    fetch(`${BASE}/question-history/delete-question`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        _id: _id
+      }),
+    }).then((res) => res.json())
+      .then((data) => console.log(data))
+      .then(() => getQuestions(currentUserId));
+  }
+
   const allQuestionsList = allQuestions.map((question: QuestionHistory) => {
     return <tr key={question._id}>
-        <th>{question.question}</th>
-        <th>{question.submittedSolution}</th>
-        <th>{question.suggestedSolution}</th>
-        <th>{question.date}</th>
-        <th><button>This is a button</button></th>
+        <td>{question.question}</td>
+        <td>{question.submittedSolution}</td>
+        <td>{question.suggestedSolution}</td>
+        <td>{question.date}</td>
+        <td><button onClick={() => deleteQuestion(question._id)}>This is a button</button></td>
       </tr>;
   });
 
   return <div>
-    <h1>Hello {currentUserId}</h1>
     <table>
       <thead>
         <tr>
