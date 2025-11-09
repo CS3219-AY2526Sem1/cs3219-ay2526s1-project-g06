@@ -253,35 +253,57 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
   });
 
-  socket.on('disconnect', () => {
-    // Clean up activity tracking
-    userActivity.delete(socket.id);
-    console.log(`[Collab] User disconnected: ${socket.id}`);
+  socket.on('disconnecting', () => {
+    // 'disconnecting' fires BEFORE the socket leaves rooms
+    console.log(`[Collab] User disconnecting (before room removal): ${socket.id}`);
 
-    // Find which rooms this socket was in
+    // Find which rooms this socket is in (still present at this point)
     const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
-    console.log(`[Collab] Disconnected user was in rooms:`, rooms);
+    console.log(`[Collab] User is in rooms:`, rooms);
 
     rooms.forEach(roomId => {
       const roomBefore = io.sockets.adapter.rooms.get(roomId);
-      console.log(`[Collab] Room ${roomId} state before broadcast - participants: ${roomBefore?.size || 0}`);
+      console.log(`[Collab] Room ${roomId} - participants before disconnect: ${roomBefore?.size || 0}`);
 
-      // Broadcast updated presence to remaining participants
-      const participants = getParticipants(io, roomId);
-      console.log(`[Collab] Broadcasting presence update to room ${roomId}:`, participants);
-      broadcastPresence(io, roomId);
+      // The disconnecting socket is still in the room at this point
+      // So we manually exclude it to get accurate remaining participants
+      const allParticipants = getParticipants(io, roomId);
+      const remainingParticipants = allParticipants.filter(p => {
+        // Find socket for this participant
+        const room = io.sockets.adapter.rooms.get(roomId);
+        if (!room) return false;
+        for (const sid of room) {
+          const s = io.sockets.sockets.get(sid);
+          if (s?.id === socket.id) continue; // Skip the disconnecting socket
+          if (s?.data?.user?.userId === p.userId || s?.data?.user?.email === p.email) {
+            return true;
+          }
+        }
+        return false;
+      });
 
-      // Check if room is now empty
+      console.log(`[Collab] Broadcasting presence to room ${roomId}:`, remainingParticipants);
+
+      // Broadcast to others in the room (the disconnecting socket is excluded automatically)
+      socket.to(roomId).emit('presence:update', { participants: remainingParticipants });
+    });
+  });
+
+  socket.on('disconnect', () => {
+    // 'disconnect' fires AFTER the socket has left all rooms
+    userActivity.delete(socket.id);
+    console.log(`[Collab] User fully disconnected: ${socket.id}`);
+
+    // Find rooms that might be empty now (socket already removed)
+    // We need to check all rooms, not socket.rooms since it's now empty
+    for (const [roomId, roomData] of roomState.entries()) {
       const room = io.sockets.adapter.rooms.get(roomId);
       if (!room || room.size === 0) {
-        // Room is empty, clean up state
-        console.log(`[Collab] Room ${roomId} is empty, cleaning up state`);
+        console.log(`[Collab] Room ${roomId} is now empty, cleaning up state`);
         roomState.delete(roomId);
         roomInitPromise.delete(roomId);
-      } else {
-        console.log(`[Collab] Room ${roomId} still has ${room.size} participant(s)`);
       }
-    });
+    }
   });
 });
 
