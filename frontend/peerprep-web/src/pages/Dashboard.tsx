@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
   const [sessionCleanedUp, setSessionCleanedUp] = useState(false);
+  const sessionCleanupAttempted = useRef(false);
 
   const navigate = useNavigate();
   // Load all topics at mount
@@ -92,13 +93,18 @@ export default function Dashboard() {
       console.log('[Matching] Connected to matching service');
       // Clean up any stale active session when Dashboard mounts
       // This handles the case where user returns to Dashboard after collab
-      if (user?.sub) {
+      if (user?.sub && !sessionCleanupAttempted.current) {
         console.log('[Matching] Sending leave_session on connect to clean up any stale session');
+        sessionCleanupAttempted.current = true;
         socketRef.current?.emit('leave_session', { userId: user.sub }, (response: any) => {
           console.log('[Matching] Session cleanup acknowledged:', response);
           setSessionCleanedUp(true);
         });
+      } else if (!user?.sub) {
+        console.log('[Matching] No user yet, enabling match button');
+        setSessionCleanedUp(true);
       } else {
+        console.log('[Matching] Session cleanup already attempted, enabling match button');
         setSessionCleanedUp(true);
       }
     });
@@ -134,6 +140,8 @@ export default function Dashboard() {
     return () => {
       socketRef.current?.disconnect();
       delete (window as any).__matchingSocket;
+      sessionCleanupAttempted.current = false;
+      setSessionCleanedUp(false);
     };
   }, [user]);
 
