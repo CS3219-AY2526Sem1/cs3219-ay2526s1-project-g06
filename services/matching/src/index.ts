@@ -55,7 +55,15 @@ io.on("connection", (socket) => {
 
   // Handle match request
   socket.on("find_match", (data: { userId: string; email: string; difficulties: string[]; topics: string[] }) => {
-    console.log(`Match request from ${data.email}:`, data);
+    console.log(`[Matching] Match request from ${data.email} (userId: ${data.userId}, socketId: ${socket.id})`);
+    console.log(`[Matching] - Requested difficulties: ${data.difficulties.join(', ')}`);
+    console.log(`[Matching] - Requested topics: ${data.topics.join(', ')}`);
+
+    // Check if user is already in queue
+    if (matchingQueue.isUserInQueue(data.userId)) {
+      console.log(`[Matching] User ${data.email} is already in queue, removing old entry first`);
+      matchingQueue.removeFromQueue(data.userId);
+    }
 
     const request: MatchRequest = {
       userId: data.userId,
@@ -71,7 +79,11 @@ io.on("connection", (socket) => {
 
     if (matchResult) {
       // Match found!
-      console.log(`Match found! Room: ${matchResult.matchedRequest.roomId}`);
+      console.log(`[Matching] Match found! Room: ${matchResult.matchedRequest.roomId}`);
+      console.log(`[Matching] - User 1: ${matchResult.matchedRequest.user1.email}`);
+      console.log(`[Matching] - User 2: ${matchResult.matchedRequest.user2.email}`);
+      console.log(`[Matching] - Matched topics: ${matchResult.matchedRequest.topics.join(', ')}`);
+      console.log(`[Matching] - Matched difficulties: ${matchResult.matchedRequest.difficulties.join(', ')}`);
 
       // Notify both users
       socket.emit("match_found", matchResult.matchedRequest);
@@ -80,20 +92,22 @@ io.on("connection", (socket) => {
       // No match, add to queue
       matchingQueue.addToQueue(request);
       socket.emit("waiting", { message: "Searching for a match..." });
-      console.log(`User ${data.email} added to queue. Queue length: ${matchingQueue.getQueueLength()}`);
+      console.log(`[Matching] User ${data.email} added to queue. Queue length: ${matchingQueue.getQueueLength()}`);
     }
   });
 
   // Handle cancel match
   socket.on("cancel_match", (data: { userId: string }) => {
+    console.log(`[Matching] Cancel request from userId: ${data.userId}`);
     matchingQueue.removeFromQueue(data.userId);
     socket.emit("match_cancelled", { message: "Match search cancelled" });
-    console.log(`User ${data.userId} cancelled match. Queue length: ${matchingQueue.getQueueLength()}`);
+    console.log(`[Matching] User ${data.userId} removed from queue. Queue length: ${matchingQueue.getQueueLength()}`);
   });
 
   socket.on("disconnect", () => {
-    console.log(`Client disconnected: ${socket.id}`);
-    // Note: We can't remove by socketId easily, could enhance this later
+    console.log(`[Matching] Client disconnected: ${socket.id}`);
+    matchingQueue.removeBySocketId(socket.id);
+    console.log(`[Matching] Removed socket ${socket.id} from queue. Queue length: ${matchingQueue.getQueueLength()}`);
   });
 });
 

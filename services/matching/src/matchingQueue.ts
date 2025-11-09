@@ -12,6 +12,14 @@ class MatchingQueue {
     this.queue = this.queue.filter((req) => req.userId !== userId);
   }
 
+  removeBySocketId(socketId: string): void {
+    this.queue = this.queue.filter((req) => req.socketId !== socketId);
+  }
+
+  isUserInQueue(userId: string): boolean {
+    return this.queue.some((req) => req.userId === userId);
+  }
+
   findMatch(request: MatchRequest): { match: MatchRequest; matchedRequest: Match } | null {
     // Find a user with overlapping criteria
     for (let i = 0; i < this.queue.length; i++) {
