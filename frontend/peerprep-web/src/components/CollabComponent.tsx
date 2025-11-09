@@ -85,6 +85,7 @@ const CollabComponent: React.FC<CollabProps> = ({
   const [connected, setConnected] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const previousParticipantCount = useRef<number>(0);
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const suppressNextLocalApply = useRef(false);
@@ -155,11 +156,24 @@ const CollabComponent: React.FC<CollabProps> = ({
         const newCount = payload.participants.length;
         const prevCount = previousParticipantCount.current;
 
+        console.log('[Collab] Presence update:', { prevCount, newCount, participants: payload.participants });
+
         // Detect when someone leaves (count decreased and we're not alone)
         if (prevCount > 0 && newCount < prevCount && newCount > 0) {
+          console.log('[Collab] Partner disconnected, showing notification');
+
+          // Clear any existing notification timeout
+          if (notificationTimeoutRef.current) {
+            clearTimeout(notificationTimeoutRef.current);
+          }
+
           setNotification("Your partner has disconnected from the session.");
+
           // Auto-hide notification after 5 seconds
-          setTimeout(() => setNotification(null), 5000);
+          notificationTimeoutRef.current = setTimeout(() => {
+            setNotification(null);
+            notificationTimeoutRef.current = null;
+          }, 5000);
         }
 
         previousParticipantCount.current = newCount;
@@ -175,6 +189,10 @@ const CollabComponent: React.FC<CollabProps> = ({
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      // Clean up notification timeout
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
     };
   }, [collabUrl, socketPath, roomId, token, topic, difficulty, user?.sub, user?.email]);
 
@@ -223,7 +241,13 @@ const CollabComponent: React.FC<CollabProps> = ({
           <span style={{ fontSize: 20 }}>⚠️</span>
           <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{notification}</span>
           <button
-            onClick={() => setNotification(null)}
+            onClick={() => {
+              if (notificationTimeoutRef.current) {
+                clearTimeout(notificationTimeoutRef.current);
+                notificationTimeoutRef.current = null;
+              }
+              setNotification(null);
+            }}
             style={{
               background: "none",
               border: "none",
@@ -331,6 +355,7 @@ const CollabComponent: React.FC<CollabProps> = ({
               textAlign: "left",
               resize: "none",
               minHeight: 0,
+              boxSizing: "border-box",
             }}
             placeholder="Type here to sync with your partner…"
           />
