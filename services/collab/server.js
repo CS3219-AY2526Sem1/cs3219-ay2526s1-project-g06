@@ -79,6 +79,7 @@ function getParticipants(io, roomId) {
 
 function broadcastPresence(io, roomId) {
   const participants = getParticipants(io, roomId);
+  console.log(`[Collab] broadcastPresence called for room ${roomId} with ${participants.length} participants`);
   io.to(roomId).emit('presence:update', { participants });
 }
 
@@ -188,10 +189,13 @@ io.on('connection', (socket) => {
     const { roomId, user, topic, difficulty } = payload;
     if (!roomId) return;
 
+    console.log(`[Collab] User ${socket.id} joining room ${roomId}, user data:`, user);
+
     socket.data.user = user || { userId: socket.id };
     socket.join(roomId);
 
     const participants = getParticipants(io, roomId);
+    console.log(`[Collab] Room ${roomId} now has ${participants.length} participants:`, participants);
 
     const q = await ensureRoomQuestion(roomId, topic, difficulty);
     let normalized = null;
@@ -238,11 +242,18 @@ io.on('connection', (socket) => {
     // Clean up activity tracking
     userActivity.delete(socket.id);
     console.log(`[Collab] User disconnected: ${socket.id}`);
+
     // Find which rooms this socket was in
     const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+    console.log(`[Collab] Disconnected user was in rooms:`, rooms);
 
     rooms.forEach(roomId => {
+      const roomBefore = io.sockets.adapter.rooms.get(roomId);
+      console.log(`[Collab] Room ${roomId} state before broadcast - participants: ${roomBefore?.size || 0}`);
+
       // Broadcast updated presence to remaining participants
+      const participants = getParticipants(io, roomId);
+      console.log(`[Collab] Broadcasting presence update to room ${roomId}:`, participants);
       broadcastPresence(io, roomId);
 
       // Check if room is now empty
@@ -252,6 +263,8 @@ io.on('connection', (socket) => {
         console.log(`[Collab] Room ${roomId} is empty, cleaning up state`);
         roomState.delete(roomId);
         roomInitPromise.delete(roomId);
+      } else {
+        console.log(`[Collab] Room ${roomId} still has ${room.size} participant(s)`);
       }
     });
   });
