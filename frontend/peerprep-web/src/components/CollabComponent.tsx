@@ -220,12 +220,15 @@ const CollabComponent: React.FC<CollabProps> = ({
 
   const handleDisconnect = () => {
     if (socketRef.current) {
+      console.log('[Collab] Manual disconnect initiated');
       socketRef.current.disconnect();
       socketRef.current = null;
       setConnected(false);
     }
-    // Optionally navigate back or show a message
-    window.location.href = '/dashboard';
+    // Give socket time to disconnect before navigating
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 100);
   };
 
   // Debug: Log notification state changes
