@@ -156,24 +156,36 @@ const CollabComponent: React.FC<CollabProps> = ({
         const newCount = payload.participants.length;
         const prevCount = previousParticipantCount.current;
 
-        console.log('[Collab] Presence update:', { prevCount, newCount, participants: payload.participants });
+        console.log('[Collab] Presence update:', {
+          prevCount,
+          newCount,
+          participants: payload.participants,
+          willShowNotification: prevCount > 0 && newCount < prevCount && newCount > 0
+        });
 
         // Detect when someone leaves (count decreased and we're not alone)
         if (prevCount > 0 && newCount < prevCount && newCount > 0) {
-          console.log('[Collab] Partner disconnected, showing notification');
+          console.log('[Collab] Partner disconnected - setting notification state');
 
           // Clear any existing notification timeout
           if (notificationTimeoutRef.current) {
+            console.log('[Collab] Clearing existing timeout');
             clearTimeout(notificationTimeoutRef.current);
           }
 
-          setNotification("Your partner has disconnected from the session.");
+          const message = "Your partner has disconnected from the session.";
+          console.log('[Collab] Setting notification:', message);
+          setNotification(message);
 
           // Auto-hide notification after 5 seconds
-          notificationTimeoutRef.current = setTimeout(() => {
+          const timeoutId = setTimeout(() => {
+            console.log('[Collab] Auto-hiding notification');
             setNotification(null);
             notificationTimeoutRef.current = null;
           }, 5000);
+
+          notificationTimeoutRef.current = timeoutId;
+          console.log('[Collab] Timeout set:', timeoutId);
         }
 
         previousParticipantCount.current = newCount;
@@ -215,6 +227,11 @@ const CollabComponent: React.FC<CollabProps> = ({
     // Optionally navigate back or show a message
     window.location.href = '/dashboard';
   };
+
+  // Debug: Log notification state changes
+  useEffect(() => {
+    console.log('[Collab] Notification state changed:', notification);
+  }, [notification]);
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16, position: "relative" }}>
@@ -344,7 +361,7 @@ const CollabComponent: React.FC<CollabProps> = ({
             value={code}
             onChange={onCodeChange}
             style={{
-              width: "100%",
+              width: "calc(100% - 2px)",
               flex: 1,
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               fontSize: 14,
