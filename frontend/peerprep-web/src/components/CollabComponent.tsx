@@ -116,6 +116,7 @@ const CollabComponent: React.FC<CollabProps> = ({
     }, 30000);
 
     socket.on("connect", () => {
+      console.log('[Collab] Socket connected, ID:', socket.id);
       setConnected(true);
       const payload: JoinRoomPayload = {
         roomId,
@@ -171,6 +172,8 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
 
     socket.on("presence:update", (payload: PresenceUpdatePayload) => {
+      console.log('[Collab] RAW presence:update event received:', payload);
+
       if (Array.isArray(payload?.participants)) {
         const newCount = payload.participants.length;
         const prevCount = previousParticipantCount.current;

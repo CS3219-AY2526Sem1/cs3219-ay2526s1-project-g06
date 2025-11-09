@@ -79,8 +79,23 @@ function getParticipants(io, roomId) {
 
 function broadcastPresence(io, roomId) {
   const participants = getParticipants(io, roomId);
-  console.log(`[Collab] broadcastPresence called for room ${roomId} with ${participants.length} participants`);
+  const room = io.sockets.adapter.rooms.get(roomId);
+  const socketIds = room ? Array.from(room) : [];
+
+  console.log(`[Collab] broadcastPresence called for room ${roomId}`);
+  console.log(`[Collab] - Participants: ${participants.length}`, participants);
+  console.log(`[Collab] - Socket IDs in room:`, socketIds);
+  console.log(`[Collab] - Emitting presence:update to room ${roomId}`);
+
   io.to(roomId).emit('presence:update', { participants });
+
+  // Verify emission by logging to each socket
+  socketIds.forEach(sid => {
+    const socket = io.sockets.sockets.get(sid);
+    if (socket) {
+      console.log(`[Collab] - Confirmed socket ${sid} (${socket.data?.user?.email || 'unknown'}) should receive update`);
+    }
+  });
 }
 
 async function requestQuestion(url) {
