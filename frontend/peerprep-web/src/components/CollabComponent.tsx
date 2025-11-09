@@ -85,7 +85,7 @@ const CollabComponent: React.FC<CollabProps> = ({
   const [connected, setConnected] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const previousParticipantCount = useRef<number>(0);
-  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const notificationTimeoutRef = useRef<number | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const suppressNextLocalApply = useRef(false);
