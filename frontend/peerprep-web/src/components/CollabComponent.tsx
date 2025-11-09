@@ -224,6 +224,14 @@ const CollabComponent: React.FC<CollabProps> = ({
       clearInterval(heartbeatInterval);
       socket.disconnect();
       socketRef.current = null;
+
+      // Notify matching service that user left the session
+      const matchingSocket = (window as any).__matchingSocket;
+      if (matchingSocket && user?.sub) {
+        console.log('[Collab] Notifying matching service of session leave (cleanup)');
+        matchingSocket.emit('leave_session', { userId: user.sub });
+      }
+
       // Clean up notification timeout
       if (notificationTimeoutRef.current) {
         clearTimeout(notificationTimeoutRef.current);
@@ -248,6 +256,14 @@ const CollabComponent: React.FC<CollabProps> = ({
       socketRef.current = null;
       setConnected(false);
     }
+
+    // Notify matching service that user left the session
+    const matchingSocket = (window as any).__matchingSocket;
+    if (matchingSocket && user?.sub) {
+      console.log('[Collab] Notifying matching service of session leave');
+      matchingSocket.emit('leave_session', { userId: user.sub });
+    }
+
     // Give socket time to disconnect before navigating
     setTimeout(() => {
       window.location.href = '/dashboard';

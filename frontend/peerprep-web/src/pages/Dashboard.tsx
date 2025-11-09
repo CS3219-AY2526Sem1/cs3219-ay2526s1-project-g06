@@ -84,6 +84,9 @@ export default function Dashboard() {
     console.log('Connecting to matching service:', matchingUrl, 'with path:', socketPath);
     socketRef.current = io(matchingUrl, {path: socketPath});
 
+    // Expose socket globally so CollabComponent can notify when leaving
+    (window as any).__matchingSocket = socketRef.current;
+
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);
     });
@@ -105,8 +108,16 @@ export default function Dashboard() {
       setIsSearching(false);
     });
 
+    socketRef.current.on("match_error", (data: { message: string }) => {
+      console.error('[Matching] Match error:', data.message);
+      setStatusMessage(data.message);
+      setIsSearching(false);
+      alert(data.message); // Show alert to user
+    });
+
     return () => {
       socketRef.current?.disconnect();
+      delete (window as any).__matchingSocket;
     };
   }, [user]);
 

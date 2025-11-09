@@ -59,6 +59,16 @@ io.on("connection", (socket) => {
     console.log(`[Matching] - Requested difficulties: ${data.difficulties.join(', ')}`);
     console.log(`[Matching] - Requested topics: ${data.topics.join(', ')}`);
 
+    // Check if user is already in an active collaboration session
+    if (matchingQueue.isUserInActiveSession(data.userId)) {
+      const activeRoomId = matchingQueue.getActiveSession(data.userId);
+      console.log(`[Matching] ⚠️ User ${data.email} is already in active session (room: ${activeRoomId}), rejecting match request`);
+      socket.emit("match_error", {
+        message: "You are already in an active collaboration session. Please disconnect first."
+      });
+      return;
+    }
+
     // Check if user is already in queue
     if (matchingQueue.isUserInQueue(data.userId)) {
       console.log(`[Matching] User ${data.email} is already in queue, removing old entry first`);
@@ -85,6 +95,11 @@ io.on("connection", (socket) => {
       console.log(`[Matching] - Matched topics: ${matchResult.matchedRequest.topics.join(', ')}`);
       console.log(`[Matching] - Matched difficulties: ${matchResult.matchedRequest.difficulties.join(', ')}`);
 
+      // Track active sessions for both users
+      matchingQueue.addActiveSession(matchResult.matchedRequest.user1.userId, matchResult.matchedRequest.roomId);
+      matchingQueue.addActiveSession(matchResult.matchedRequest.user2.userId, matchResult.matchedRequest.roomId);
+      console.log(`[Matching] Added both users to active sessions tracking`);
+
       // Notify both users
       socket.emit("match_found", matchResult.matchedRequest);
       io.to(matchResult.match.socketId).emit("match_found", matchResult.matchedRequest);
@@ -102,6 +117,13 @@ io.on("connection", (socket) => {
     matchingQueue.removeFromQueue(data.userId);
     socket.emit("match_cancelled", { message: "Match search cancelled" });
     console.log(`[Matching] User ${data.userId} removed from queue. Queue length: ${matchingQueue.getQueueLength()}`);
+  });
+
+  // Handle leaving collaboration session
+  socket.on("leave_session", (data: { userId: string }) => {
+    console.log(`[Matching] Leave session request from userId: ${data.userId}`);
+    matchingQueue.removeActiveSession(data.userId);
+    console.log(`[Matching] User ${data.userId} removed from active sessions`);
   });
 
   socket.on("disconnect", () => {
