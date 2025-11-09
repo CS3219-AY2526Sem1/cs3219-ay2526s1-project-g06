@@ -108,6 +108,13 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
     socketRef.current = socket;
 
+    // Set up heartbeat ping every 30 seconds
+    const heartbeatInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('ping');
+      }
+    }, 30000);
+
     socket.on("connect", () => {
       setConnected(true);
       const payload: JoinRoomPayload = {
@@ -131,6 +138,18 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
 
     socket.on("disconnect", () => setConnected(false));
+
+    socket.on("pong", () => {
+      console.log('[Collab] Heartbeat pong received');
+    });
+
+    socket.on("idle_disconnect", (payload: { message?: string }) => {
+      console.log('[Collab] Idle disconnect:', payload?.message);
+      setNotification("You have been disconnected due to inactivity.");
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 3000);
+    });
 
     socket.on("collab:init", (payload: CollabInitPayload) => {
       if (payload?.question) setQuestion(payload.question);
@@ -199,6 +218,7 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
 
     return () => {
+      clearInterval(heartbeatInterval);
       socket.disconnect();
       socketRef.current = null;
       // Clean up notification timeout

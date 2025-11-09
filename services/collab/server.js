@@ -5,6 +5,11 @@ const { createServer } = require('node:http');
 const { Server } = require('socket.io');
 const roomState = new Map(); // roomId -> { question, topic, difficulty }
 const roomInitPromise = new Map();
+const userActivity = new Map(); // socketId -> lastActivityTimestamp
+
+// Idle timeout configuration (30 minutes)
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 60 * 1000; // Check every minute
 
 const PORT = Number(process.env.PORT) || 4004;
 
@@ -143,8 +148,43 @@ async function ensureRoomQuestion(roomId, topic, difficulty) {
   return p; // all concurrent joiners await this
 }
 
+// Periodic check for idle users
+setInterval(() => {
+  const now = Date.now();
+  const socketsToDisconnect = [];
+
+  userActivity.forEach((lastActivity, socketId) => {
+    if (now - lastActivity > IDLE_TIMEOUT_MS) {
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) {
+        console.log(`[Collab] Disconnecting idle user: ${socketId}`);
+        socketsToDisconnect.push(socket);
+      }
+      userActivity.delete(socketId);
+    }
+  });
+
+  // Disconnect idle sockets
+  socketsToDisconnect.forEach(socket => {
+    socket.emit('idle_disconnect', { message: 'Disconnected due to inactivity' });
+    socket.disconnect(true);
+  });
+}, HEARTBEAT_INTERVAL_MS);
+
 io.on('connection', (socket) => {
+  // Track initial connection as activity
+  userActivity.set(socket.id, Date.now());
+  console.log(`[Collab] User connected: ${socket.id}`);
+
+  // Handle heartbeat/ping from client
+  socket.on('ping', () => {
+    userActivity.set(socket.id, Date.now());
+    socket.emit('pong');
+  });
+
   socket.on('join_room', async (payload = {}, ack) => {
+    // Update activity on join
+    userActivity.set(socket.id, Date.now());
     const { roomId, user, topic, difficulty } = payload;
     if (!roomId) return;
 
@@ -189,10 +229,15 @@ io.on('connection', (socket) => {
 
   socket.on('codespace:change', ({ roomId, code, clientTs }) => {
     if (!roomId) return;
+    // Update activity on code change
+    userActivity.set(socket.id, Date.now());
     socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
   });
 
   socket.on('disconnect', () => {
+    // Clean up activity tracking
+    userActivity.delete(socket.id);
+    console.log(`[Collab] User disconnected: ${socket.id}`);
     // Find which rooms this socket was in
     const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
 
