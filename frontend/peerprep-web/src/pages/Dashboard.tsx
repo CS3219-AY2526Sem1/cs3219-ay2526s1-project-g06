@@ -87,6 +87,16 @@ export default function Dashboard() {
     // Expose socket globally so CollabComponent can notify when leaving
     (window as any).__matchingSocket = socketRef.current;
 
+    socketRef.current.on("connect", () => {
+      console.log('[Matching] Connected to matching service');
+      // Clean up any stale active session when Dashboard mounts
+      // This handles the case where user returns to Dashboard after collab
+      if (user?.sub) {
+        console.log('[Matching] Sending leave_session on connect to clean up any stale session');
+        socketRef.current?.emit('leave_session', { userId: user.sub });
+      }
+    });
+
     socketRef.current.on("waiting", (data) => {
       setStatusMessage(data.message);
     });
