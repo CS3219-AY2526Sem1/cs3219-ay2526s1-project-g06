@@ -77,6 +77,8 @@ export default function Dashboard() {
   }, [selectedTopic]);
 
   useEffect(() => {
+    console.log('[Matching] useEffect triggered, user:', user?.email, user?.sub);
+
     // Connect to matching service
     // In development: Connect directly to matching service port
     // In production: Connect via Nginx with path prefix
@@ -91,6 +93,9 @@ export default function Dashboard() {
 
     socketRef.current.on("connect", () => {
       console.log('[Matching] Connected to matching service');
+      console.log('[Matching] User at connect time:', user?.email, user?.sub);
+      console.log('[Matching] sessionCleanupAttempted:', sessionCleanupAttempted.current);
+
       // Clean up any stale active session when Dashboard mounts
       // This handles the case where user returns to Dashboard after collab
       if (user?.sub && !sessionCleanupAttempted.current) {
@@ -116,7 +121,7 @@ export default function Dashboard() {
     socketRef.current.on("match_found", (match: Match) => {
       const topic = match.topics?.[0] || selectedTopic;
       const difficulty = match.difficulties?.[0] || selectedDifficulty;
-    
+
       navigate("/collab", {
         state: {
           roomId: match.roomId,
@@ -138,6 +143,7 @@ export default function Dashboard() {
     });
 
     return () => {
+      console.log('[Matching] Cleaning up socket connection');
       socketRef.current?.disconnect();
       delete (window as any).__matchingSocket;
       sessionCleanupAttempted.current = false;
@@ -156,10 +162,22 @@ export default function Dashboard() {
     const canFindMatch = Boolean(selectedTopic) && Boolean(selectedDifficulty) && sessionCleanedUp;
 
   const handleFindMatch = () => {
-    if (!user || !socketRef.current) return;
+    console.log('[Matching] Find match clicked');
+    console.log('[Matching] - User:', user?.email, user?.sub);
+    console.log('[Matching] - Socket connected:', socketRef.current?.connected);
+    console.log('[Matching] - Session cleaned up:', sessionCleanedUp);
+    console.log('[Matching] - Can find match:', canFindMatch);
+    console.log('[Matching] - Selected topic:', selectedTopic);
+    console.log('[Matching] - Selected difficulty:', selectedDifficulty);
+
+    if (!user || !socketRef.current) {
+      console.log('[Matching] Cannot find match - missing user or socket');
+      return;
+    }
 
     setIsSearching(true);
     setStatusMessage("Searching for a match...");
+    console.log('[Matching] Emitting find_match event');
     socketRef.current.emit("find_match", {
       userId: user.sub,
       email: user.email,
