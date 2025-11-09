@@ -154,7 +154,8 @@ app.post("/auth/session", async (req, res) => {
       success: true,
       sessionToken: sessionCookie,
       user: {
-        uid: decodedToken.uid,
+        sub: decodedToken.uid, // 'sub' is JWT standard for subject (user ID)
+        uid: decodedToken.uid, // Keep uid for backwards compatibility
         email: email,
         displayName: displayName,
         photoURL: photoURL,
