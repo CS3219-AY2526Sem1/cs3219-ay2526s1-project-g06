@@ -83,6 +83,8 @@ const CollabComponent: React.FC<CollabProps> = ({
   const [code, setCode] = useState<string>("");
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [connected, setConnected] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+  const previousParticipantCount = useRef<number>(0);
 
   const socketRef = useRef<Socket | null>(null);
   const suppressNextLocalApply = useRef(false);
@@ -122,6 +124,7 @@ const CollabComponent: React.FC<CollabProps> = ({
         }
         if (Array.isArray(init?.participants)) {
           setParticipants(init.participants);
+          previousParticipantCount.current = init.participants.length;
         }
       });
     });
@@ -136,6 +139,7 @@ const CollabComponent: React.FC<CollabProps> = ({
       }
       if (Array.isArray(payload?.participants)) {
         setParticipants(payload.participants);
+        previousParticipantCount.current = payload.participants.length;
       }
     });
 
@@ -148,6 +152,17 @@ const CollabComponent: React.FC<CollabProps> = ({
 
     socket.on("presence:update", (payload: PresenceUpdatePayload) => {
       if (Array.isArray(payload?.participants)) {
+        const newCount = payload.participants.length;
+        const prevCount = previousParticipantCount.current;
+
+        // Detect when someone leaves (count decreased and we're not alone)
+        if (prevCount > 0 && newCount < prevCount && newCount > 0) {
+          setNotification("Your partner has disconnected from the session.");
+          // Auto-hide notification after 5 seconds
+          setTimeout(() => setNotification(null), 5000);
+        }
+
+        previousParticipantCount.current = newCount;
         setParticipants(payload.participants);
       }
     });
@@ -184,7 +199,46 @@ const CollabComponent: React.FC<CollabProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16 }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16, position: "relative" }}>
+      {/* Notification Popup */}
+      {notification && (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            backgroundColor: "#ff9800",
+            color: "white",
+            padding: "16px 24px",
+            borderRadius: 8,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            maxWidth: 400,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            animation: "slideIn 0.3s ease-out",
+          }}
+        >
+          <span style={{ fontSize: 20 }}>⚠️</span>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{notification}</span>
+          <button
+            onClick={() => setNotification(null)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontSize: 18,
+              padding: 0,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ textAlign: "left", margin: 0 }}>Collaborative Codespace</h1>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
