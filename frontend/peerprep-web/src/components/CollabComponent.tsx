@@ -271,17 +271,19 @@ const CollabComponent: React.FC<CollabProps> = ({
           display: "flex",
           flexDirection: "row",
           gap: 24,
-          alignItems: "flex-start",
+          alignItems: "stretch",
           marginTop: 20,
+          height: "calc(100vh - 180px)",
+          overflow: "hidden",
         }}
       >
         {/* Question column */}
-        <div style={{ flex: 1, textAlign: "left" }}>
+        <div style={{ flex: 1, textAlign: "left", display: "flex", flexDirection: "column", minWidth: 0 }}>
           {question ? (
             <>
-              <h2 style={{ margin: 0 }}>{question.title}</h2>
+              <h2 style={{ margin: 0, flexShrink: 0 }}>{question.title}</h2>
               {(question.topic || question.difficulty) && (
-                <p style={{ fontSize: 14, color: "#555", marginTop: 4 }}>
+                <p style={{ fontSize: 14, color: "#555", marginTop: 4, flexShrink: 0 }}>
                   {question.topic && <>Topic: <strong>{question.topic}</strong></>}
                   {(question.topic && question.difficulty) && " · "}
                   {question.difficulty && <>Difficulty: <strong>{question.difficulty}</strong></>}
@@ -295,6 +297,9 @@ const CollabComponent: React.FC<CollabProps> = ({
                   borderRadius: 8,
                   marginTop: 8,
                   textAlign: "left",
+                  flex: 1,
+                  overflowY: "auto",
+                  margin: "8px 0 0 0",
                 }}
               >
                 {question.description}
@@ -306,18 +311,17 @@ const CollabComponent: React.FC<CollabProps> = ({
         </div>
 
         {/* Editor column */}
-        <div style={{ flex: 1 }}>
-          <label htmlFor="codespace" style={{ fontWeight: 600, display: "block", textAlign: "left" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <label htmlFor="codespace" style={{ fontWeight: 600, display: "block", textAlign: "left", flexShrink: 0 }}>
             Shared editor
           </label>
           <textarea
             id="codespace"
             value={code}
             onChange={onCodeChange}
-            rows={20}
             style={{
               width: "100%",
-              minHeight: 400,
+              flex: 1,
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               fontSize: 14,
               lineHeight: 1.5,
@@ -326,10 +330,11 @@ const CollabComponent: React.FC<CollabProps> = ({
               border: "1px solid #d0d7de",
               textAlign: "left",
               resize: "none",
+              minHeight: 0,
             }}
             placeholder="Type here to sync with your partner…"
           />
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8, textAlign: "left" }}>
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8, textAlign: "left", flexShrink: 0 }}>
             Participants:{" "}
             {participants.length ? (
               participants.map((p, i) => (
