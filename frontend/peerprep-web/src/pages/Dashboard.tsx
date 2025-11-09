@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [difficulties, setDifficulties] = useState<string[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("");
+  const [sessionCleanedUp, setSessionCleanedUp] = useState(false);
 
   const navigate = useNavigate();
   // Load all topics at mount
@@ -93,7 +94,12 @@ export default function Dashboard() {
       // This handles the case where user returns to Dashboard after collab
       if (user?.sub) {
         console.log('[Matching] Sending leave_session on connect to clean up any stale session');
-        socketRef.current?.emit('leave_session', { userId: user.sub });
+        socketRef.current?.emit('leave_session', { userId: user.sub }, (response: any) => {
+          console.log('[Matching] Session cleanup acknowledged:', response);
+          setSessionCleanedUp(true);
+        });
+      } else {
+        setSessionCleanedUp(true);
       }
     });
 
@@ -139,7 +145,7 @@ export default function Dashboard() {
       setSelectedDifficulty(e.target.value);
     };
     
-    const canFindMatch = Boolean(selectedTopic) && Boolean(selectedDifficulty);
+    const canFindMatch = Boolean(selectedTopic) && Boolean(selectedDifficulty) && sessionCleanedUp;
 
   const handleFindMatch = () => {
     if (!user || !socketRef.current) return;

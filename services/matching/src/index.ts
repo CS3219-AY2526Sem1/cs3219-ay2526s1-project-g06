@@ -120,10 +120,15 @@ io.on("connection", (socket) => {
   });
 
   // Handle leaving collaboration session
-  socket.on("leave_session", (data: { userId: string }) => {
+  socket.on("leave_session", (data: { userId: string }, ack) => {
     console.log(`[Matching] Leave session request from userId: ${data.userId}`);
     matchingQueue.removeActiveSession(data.userId);
     console.log(`[Matching] User ${data.userId} removed from active sessions`);
+
+    // Send acknowledgment if callback provided
+    if (typeof ack === 'function') {
+      ack({ success: true });
+    }
   });
 
   socket.on("disconnect", () => {
