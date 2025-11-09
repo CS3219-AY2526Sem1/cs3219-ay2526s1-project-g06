@@ -191,6 +191,25 @@ io.on('connection', (socket) => {
     if (!roomId) return;
     socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
   });
+
+  socket.on('disconnect', () => {
+    // Find which rooms this socket was in
+    const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+
+    rooms.forEach(roomId => {
+      // Broadcast updated presence to remaining participants
+      broadcastPresence(io, roomId);
+
+      // Check if room is now empty
+      const room = io.sockets.adapter.rooms.get(roomId);
+      if (!room || room.size === 0) {
+        // Room is empty, clean up state
+        console.log(`[Collab] Room ${roomId} is empty, cleaning up state`);
+        roomState.delete(roomId);
+        roomInitPromise.delete(roomId);
+      }
+    });
+  });
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {

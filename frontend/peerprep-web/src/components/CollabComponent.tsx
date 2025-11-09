@@ -173,13 +173,42 @@ const CollabComponent: React.FC<CollabProps> = ({
     setCode(next);
   };
 
+  const handleDisconnect = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+      setConnected(false);
+    }
+    // Optionally navigate back or show a message
+    window.location.href = '/dashboard';
+  };
+
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h1 style={{ textAlign: "left" }}>Collaborative Codespace</h1>
-        <span style={{ fontSize: 12, color: connected ? "green" : "gray" }}>
-          {connected ? "Connected" : "Disconnected"}
-        </span>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ textAlign: "left", margin: 0 }}>Collaborative Codespace</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ fontSize: 12, color: connected ? "green" : "gray" }}>
+            {connected ? "Connected" : "Disconnected"}
+          </span>
+          <button
+            onClick={handleDisconnect}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#dc3545",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#c82333")}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#dc3545")}
+          >
+            Disconnect
+          </button>
+        </div>
       </header>
 
       {/* Side-by-side layout */}
@@ -242,6 +271,7 @@ const CollabComponent: React.FC<CollabProps> = ({
               borderRadius: 8,
               border: "1px solid #d0d7de",
               textAlign: "left",
+              resize: "none",
             }}
             placeholder="Type here to sync with your partner…"
           />
