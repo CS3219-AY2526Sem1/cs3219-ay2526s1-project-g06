@@ -8,10 +8,6 @@ import {checkAdmin} from "../middleware/adminAuth";
 
 const router = Router();
 
-//new branch
-// TODO: ensuring only users authenticated admins can access certain routes  
-// TODO: Easy, Medium, Hard ordering 
-
 // user validation
 router.use(checkUser);
 
