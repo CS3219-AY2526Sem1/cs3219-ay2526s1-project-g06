@@ -3,19 +3,10 @@ import {createRouter} from "./subRouters/createRouter";
 import {readRouter} from "./subRouters/readRouter";
 import {updateRouter} from "./subRouters/updateRouter";
 import {deleteRouter} from "./subRouters/deleteRouter";
-import {checkUser} from "../middleware/userAuth";
-import {checkAdmin} from "../middleware/adminAuth";
 
 const router = Router();
 
-// user validation
-//router.use(checkUser);
-
 router.use(readRouter);
-
-// admin validation
-router.use(checkAdmin);
-
 router.use(createRouter);
 router.use(updateRouter);
 router.use(deleteRouter);
