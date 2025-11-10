@@ -1,7 +1,7 @@
 AI Assistance Disclosure:
 Tool: Cursor (model: Claude Sonnet 4.5), date: 2025‑11‑10
 Scope: Generated api documentation for question service, after question service was finalised 
-Author review: I validated correctness.
+Author review: I validated correctness. And removed certain admin titles as it is not yet implmeneted and could be misleading. 
 
 # Question Service API Documentation
 
@@ -10,13 +10,13 @@ The Question Service provides endpoints for managing coding interview questions.
 
 ## Authentication & Authorization
 - **Read operations**: Accessible to all users
-- **Create, Update, Delete operations**: Require admin privileges
+- **Create, Update, Delete operations**: Will Require admin privileges in the future, as of now they can be accessed by all users. 
 
 ---
 
 ## Endpoints
 
-### Create Operations (Admin Only)
+### Create Operations 
 
 #### Create a Single Question
 **POST** `/create/single`
@@ -65,7 +65,7 @@ Create a new question in the database.
 
 ---
 
-### Read Operations (User + Admin)
+### Read Operations 
 
 #### Read Random Question
 **GET** `/random`
@@ -285,7 +285,7 @@ Retrieve all difficulty levels available for a specific topic (sorted: Easy, Med
 
 ---
 
-### Update Operations (Admin Only)
+### Update Operations
 
 #### Update a Question
 **PATCH** `/update/:id`
@@ -337,7 +337,7 @@ Update an existing question by its ID. All fields are optional; only provided fi
 
 ---
 
-### Delete Operations (Admin Only)
+### Delete Operations 
 
 #### Delete a Single Question
 **DELETE** `/delete/single/:id`

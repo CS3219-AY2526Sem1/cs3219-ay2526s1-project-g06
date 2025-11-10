@@ -1,3 +1,13 @@
+// AI Assistance Disclosure:
+// Tool: Cursor (model: Claude Sonnet 4.5), date: 2025‑10‑13
+// Scope: How to generate 1 random document from mongodb database 
+// Author review: Was suggested to use aggregate with size 1, which was confirmed to be the correct approach from other sources such as stackoverflow, 
+// although it was never explicilty stated in mongodb documentaion. 
+
+// Tool: Cursor (model: Claude Sonnet 4.5), date: 2025‑11‑10
+// Scope: Generate a sorting helper function by diffficulty
+// Author review: The sortdiffculty function was modified to add typescript types 
+
 import {Router} from "express";
 import {Request, Response} from "express";
 import {Question} from "../../models/question";
