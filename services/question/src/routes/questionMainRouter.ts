@@ -9,7 +9,7 @@ import {checkAdmin} from "../middleware/adminAuth";
 const router = Router();
 
 // user validation
-router.use(checkUser);
+//router.use(checkUser);
 
 router.use(readRouter);
 
