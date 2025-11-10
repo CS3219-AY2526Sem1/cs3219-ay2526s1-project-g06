@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 import {Question} from "./models/question";
 import {sampleQuestions} from "./seed/sampleQuestions";
@@ -51,6 +52,7 @@ const corsOptions = {
 };
 
 questionApp.use(cors(corsOptions));
+questionApp.use(cookieParser());
 questionApp.use(express.json());
 
 // general health check
