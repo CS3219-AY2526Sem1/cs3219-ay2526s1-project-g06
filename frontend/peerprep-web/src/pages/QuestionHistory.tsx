@@ -113,6 +113,19 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
       .then(() => getQuestions(currentUserId));
   }
 
+  const deleteQuestionHistory = async () => {
+		const baseUrl = import.meta.env.VITE_BACKEND_URL
+    if (!user) return;
+    try {
+			await fetch(`${baseUrl}/question-history/delete-user/${currentUserId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   const allQuestionsList = allQuestions.filter((question: QuestionHistory) => {
     return question.title.includes(titleFilter) &&
            question.topic.includes(topicFilter) &&
@@ -124,7 +137,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
         <td>{question.topic}</td>
         <td>{question.difficulty}</td>
         <td>{question.date.toString()}</td>
-        <td><button onClick={() => deleteQuestion(question._id)}>delete</button></td>
+        <td><button onClick={() => deleteQuestionHistory()}>delete</button></td>
       </tr>;
   });
 
@@ -138,24 +151,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           <th>Difficulty</th>
           <th>Date</th>
           <th></th>
-        </tr>
-        <tr>
-          <th></th>
-          <th>
-            <textarea value={questionText} style={{resize: "none"}} onChange={(e) => setQuestionText(e.target.value)}></textarea>
-          </th>
-          <th>
-            <textarea value={submittedSolution} style={{resize: "none"}} onChange={(e) => setSubmittedSolution(e.target.value)}></textarea>
-          </th>
-          <th>
-            <textarea value={suggestedSolution} style={{resize: "none"}} onChange={(e) => setSuggestedSolution(e.target.value)}></textarea>
-          </th>
-          <th>
-            no entry
-          </th>
-          <th>
-            <button onClick={addQuestion}>Add</button>
-          </th>
+        <th><button onClick={() => deleteQuestion()}>delete all</button></th>
         </tr>
 
         {/*filtering*/}
