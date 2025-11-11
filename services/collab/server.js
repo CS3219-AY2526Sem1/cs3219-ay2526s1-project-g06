@@ -5,6 +5,11 @@ const { createServer } = require('node:http');
 const { Server } = require('socket.io');
 const roomState = new Map(); // roomId -> { question, topic, difficulty }
 const roomInitPromise = new Map();
+const userActivity = new Map(); // socketId -> lastActivityTimestamp
+
+// Idle timeout configuration (30 minutes)
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 60 * 1000; // Check every minute
 
 const PORT = Number(process.env.PORT) || 4004;
 
@@ -74,7 +79,23 @@ function getParticipants(io, roomId) {
 
 function broadcastPresence(io, roomId) {
   const participants = getParticipants(io, roomId);
+  const room = io.sockets.adapter.rooms.get(roomId);
+  const socketIds = room ? Array.from(room) : [];
+
+  console.log(`[Collab] broadcastPresence called for room ${roomId}`);
+  console.log(`[Collab] - Participants: ${participants.length}`, participants);
+  console.log(`[Collab] - Socket IDs in room:`, socketIds);
+  console.log(`[Collab] - Emitting presence:update to room ${roomId}`);
+
   io.to(roomId).emit('presence:update', { participants });
+
+  // Verify emission by logging to each socket
+  socketIds.forEach(sid => {
+    const socket = io.sockets.sockets.get(sid);
+    if (socket) {
+      console.log(`[Collab] - Confirmed socket ${sid} (${socket.data?.user?.email || 'unknown'}) should receive update`);
+    }
+  });
 }
 
 async function requestQuestion(url) {
@@ -143,7 +164,6 @@ async function ensureRoomQuestion(roomId, topic, difficulty) {
   return p; // all concurrent joiners await this
 }
 
-
 const fetch = require('node-fetch');
 
 // add Question to history on disconnect
@@ -169,11 +189,47 @@ const addQuestion = (question, userId, currentText) => {
     .then((data) => console.log(data))
 };
 
+// Periodic check for idle users
+setInterval(() => {
+  const now = Date.now();
+  const socketsToDisconnect = [];
+
+  userActivity.forEach((lastActivity, socketId) => {
+    if (now - lastActivity > IDLE_TIMEOUT_MS) {
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) {
+        console.log(`[Collab] Disconnecting idle user: ${socketId}`);
+        socketsToDisconnect.push(socket);
+      }
+      userActivity.delete(socketId);
+    }
+  });
+
+  // Disconnect idle sockets
+  socketsToDisconnect.forEach(socket => {
+    socket.emit('idle_disconnect', { message: 'Disconnected due to inactivity' });
+    socket.disconnect(true);
+  });
+}, HEARTBEAT_INTERVAL_MS);
 
 io.on('connection', (socket) => {
+  // Track initial connection as activity
+  userActivity.set(socket.id, Date.now());
+  console.log(`[Collab] User connected: ${socket.id}`);
+
+  // Handle heartbeat/ping from client
+  socket.on('ping', () => {
+    userActivity.set(socket.id, Date.now());
+    socket.emit('pong');
+  });
+
   socket.on('join_room', async (payload = {}, ack) => {
+    // Update activity on join
+    userActivity.set(socket.id, Date.now());
     const { roomId, user, topic, difficulty } = payload;
     if (!roomId) return;
+
+    console.log(`[Collab] User ${socket.id} joining room ${roomId}, user data:`, user);
 
     socket.data.user = user || { userId: socket.id };
     socket.join(roomId);
@@ -181,6 +237,7 @@ io.on('connection', (socket) => {
     socket.data.userId = user?.userId || socket.id;
 
     const participants = getParticipants(io, roomId);
+    console.log(`[Collab] Room ${roomId} now has ${participants.length} participants:`, participants);
 
     const q = await ensureRoomQuestion(roomId, topic, difficulty);
     let normalized = null;
@@ -221,12 +278,49 @@ io.on('connection', (socket) => {
   
   socket.on('codespace:change', ({ roomId, code, clientTs }) => {
     if (!roomId) return;
+    // Update activity on code change
+    userActivity.set(socket.id, Date.now());
     socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
     socket.data.currentCode = code;
   });
 
-	//on disconnect
-	socket.on('disconnect', async () => {
+  socket.on('disconnecting', () => {
+    // 'disconnecting' fires BEFORE the socket leaves rooms
+    console.log(`[Collab] User disconnecting (before room removal): ${socket.id}`);
+
+    // Find which rooms this socket is in (still present at this point)
+    const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+    console.log(`[Collab] User is in rooms:`, rooms);
+
+    rooms.forEach(roomId => {
+      const roomBefore = io.sockets.adapter.rooms.get(roomId);
+      console.log(`[Collab] Room ${roomId} - participants before disconnect: ${roomBefore?.size || 0}`);
+
+      // The disconnecting socket is still in the room at this point
+      // So we manually exclude it to get accurate remaining participants
+      const allParticipants = getParticipants(io, roomId);
+      const remainingParticipants = allParticipants.filter(p => {
+        // Find socket for this participant
+        const room = io.sockets.adapter.rooms.get(roomId);
+        if (!room) return false;
+        for (const sid of room) {
+          const s = io.sockets.sockets.get(sid);
+          if (s?.id === socket.id) continue; // Skip the disconnecting socket
+          if (s?.data?.user?.userId === p.userId || s?.data?.user?.email === p.email) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      console.log(`[Collab] Broadcasting presence to room ${roomId}:`, remainingParticipants);
+
+      // Broadcast to others in the room (the disconnecting socket is excluded automatically)
+      socket.to(roomId).emit('presence:update', { participants: remainingParticipants });
+    });
+  });
+
+  socket.on('disconnect', () => {
 		try {
 			await addQuestion({
         title: socket.data.question.title,
@@ -237,7 +331,22 @@ io.on('connection', (socket) => {
 		} catch (err) {
       console.error(err);
     }
-	});
+
+    // 'disconnect' fires AFTER the socket has left all rooms
+    userActivity.delete(socket.id);
+    console.log(`[Collab] User fully disconnected: ${socket.id}`);
+
+    // Find rooms that might be empty now (socket already removed)
+    // We need to check all rooms, not socket.rooms since it's now empty
+    for (const [roomId, roomData] of roomState.entries()) {
+      const room = io.sockets.adapter.rooms.get(roomId);
+      if (!room || room.size === 0) {
+        console.log(`[Collab] Room ${roomId} is now empty, cleaning up state`);
+        roomState.delete(roomId);
+        roomInitPromise.delete(roomId);
+      }
+    }
+  });
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {

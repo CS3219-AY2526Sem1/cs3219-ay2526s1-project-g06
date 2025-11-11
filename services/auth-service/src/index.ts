@@ -94,33 +94,42 @@ app.post("/auth/session", async (req, res) => {
     let displayName = null;
     let photoURL = null;
     let email = decodedToken.email;
+    let bio = null;
+    let language = null;
+    let profileCompleted = false;
 
     try {
       console.log('🔍 Auth Service: Fetching full user record from Firebase...');
       const userRecord = await auth.getUser(decodedToken.uid);
-      
+
       displayName = userRecord.displayName || decodedToken.name || null;
       email = userRecord.email || decodedToken.email;
       photoURL = userRecord.photoURL || decodedToken.picture || null;
-      
+
+      // Get custom claims (includes profileCompleted, bio, language)
+      bio = userRecord.customClaims?.bio || null;
+      language = userRecord.customClaims?.language || null;
+      profileCompleted = userRecord.customClaims?.profileCompleted || false;
+
       // Fix Google photo URL - ensure proper size
       if (photoURL && photoURL.includes('googleusercontent.com')) {
         const baseUrl = photoURL.split('=')[0];
         photoURL = `${baseUrl}=s400-c`;
       }
-      
+
       console.log('✅ Auth Service: User data fetched:', {
         uid: userRecord.uid,
         email: email,
         displayName: displayName,
-        photoURL: photoURL ? 'Present' : 'Missing'
+        photoURL: photoURL ? 'Present' : 'Missing',
+        profileCompleted: profileCompleted
       });
     } catch (error: any) {
       console.error('⚠️ Auth Service: Failed to fetch full user data:', error.message);
       // Fallback to token claims if Firebase fetch fails
       displayName = decodedToken.name || null;
       photoURL = decodedToken.picture || null;
-      
+
       if (photoURL && photoURL.includes('googleusercontent.com')) {
         const baseUrl = photoURL.split('=')[0];
         photoURL = `${baseUrl}=s400-c`;
@@ -141,14 +150,19 @@ app.post("/auth/session", async (req, res) => {
 
     res.cookie("session", sessionCookie, cookieOptions);
 
-    res.json({ 
+    res.json({
       success: true,
       sessionToken: sessionCookie,
       user: {
-        uid: decodedToken.uid,
+        sub: decodedToken.uid, // 'sub' is JWT standard for subject (user ID)
+        uid: decodedToken.uid, // Keep uid for backwards compatibility
         email: email,
         displayName: displayName,
-        photoURL: photoURL
+        photoURL: photoURL,
+        bio: bio,
+        language: language,
+        profileCompleted: profileCompleted,
+        role: 'user'
       }
     });
   } catch (error: any) {

@@ -43,6 +43,25 @@ router.post("/session", async (req, res) => {
     console.log('🔍 User Service: Creating session via auth service...');
     console.log('🔍 User Service: idToken length:', idToken.length);
 
+    // First, verify the ID token to get the user's UID
+    const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+
+    // Check if user exists in MongoDB and sync custom claims BEFORE creating session
+    const existingUserCheck = await User.findOne({ uid: decodedToken.uid });
+    if (existingUserCheck) {
+      console.log('🔄 User Service: Syncing profileCompleted to Firebase BEFORE session creation');
+      try {
+        await firebaseAuth.setCustomUserClaims(decodedToken.uid, {
+          profileCompleted: existingUserCheck.profileCompleted,
+          bio: existingUserCheck.bio,
+          language: existingUserCheck.language
+        });
+        console.log('✅ User Service: Custom claims synced');
+      } catch (error: any) {
+        console.error('⚠️ User Service: Failed to sync custom claims:', error.message);
+      }
+    }
+
     // Call auth service to create session
     const authResponse = await axios.post(
       `${AUTH_SERVICE_URL}/auth/session`,
@@ -72,7 +91,7 @@ router.post("/session", async (req, res) => {
     if (existingUser) {
       // User exists - only update photoURL, keep existing displayName
       console.log('🔄 User Service: User exists, updating photoURL only');
-      
+
       const updateData: any = {
         updatedAt: new Date()
       };
@@ -211,6 +230,18 @@ router.put("/profile", async (req, res) => {
 
     if (!updatedUser) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Sync profileCompleted to Firebase custom claims
+    try {
+      await firebaseAuth.setCustomUserClaims(verifiedUser.uid, {
+        profileCompleted: true,
+        bio: updatedUser.bio,
+        language: updatedUser.language
+      });
+      console.log('✅ User Service: Synced profileCompleted to Firebase custom claims');
+    } catch (error: any) {
+      console.error('⚠️ User Service: Failed to sync custom claims:', error.message);
     }
 
     res.json({

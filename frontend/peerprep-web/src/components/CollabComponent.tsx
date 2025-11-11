@@ -83,6 +83,9 @@ const CollabComponent: React.FC<CollabProps> = ({
   const [code, setCode] = useState<string>("");
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [connected, setConnected] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+  const previousParticipantCount = useRef<number>(0);
+  const notificationTimeoutRef = useRef<number | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const suppressNextLocalApply = useRef(false);
@@ -105,7 +108,15 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
     socketRef.current = socket;
 
+    // Set up heartbeat ping every 30 seconds
+    const heartbeatInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('ping');
+      }
+    }, 30000);
+
     socket.on("connect", () => {
+      console.log('[Collab] Socket connected, ID:', socket.id);
       setConnected(true);
       const payload: JoinRoomPayload = {
         roomId,
@@ -122,11 +133,24 @@ const CollabComponent: React.FC<CollabProps> = ({
         }
         if (Array.isArray(init?.participants)) {
           setParticipants(init.participants);
+          previousParticipantCount.current = init.participants.length;
         }
       });
     });
 
     socket.on("disconnect", () => setConnected(false));
+
+    socket.on("pong", () => {
+      console.log('[Collab] Heartbeat pong received');
+    });
+
+    socket.on("idle_disconnect", (payload: { message?: string }) => {
+      console.log('[Collab] Idle disconnect:', payload?.message);
+      setNotification("You have been disconnected due to inactivity.");
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 3000);
+    });
 
     socket.on("collab:init", (payload: CollabInitPayload) => {
       if (payload?.question) setQuestion(payload.question);
@@ -136,6 +160,7 @@ const CollabComponent: React.FC<CollabProps> = ({
       }
       if (Array.isArray(payload?.participants)) {
         setParticipants(payload.participants);
+        previousParticipantCount.current = payload.participants.length;
       }
     });
 
@@ -147,7 +172,45 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
 
     socket.on("presence:update", (payload: PresenceUpdatePayload) => {
+      console.log('[Collab] RAW presence:update event received:', payload);
+
       if (Array.isArray(payload?.participants)) {
+        const newCount = payload.participants.length;
+        const prevCount = previousParticipantCount.current;
+
+        console.log('[Collab] Presence update:', {
+          prevCount,
+          newCount,
+          participants: payload.participants,
+          willShowNotification: prevCount > 0 && newCount < prevCount && newCount > 0
+        });
+
+        // Detect when someone leaves (count decreased and we're not alone)
+        if (prevCount > 0 && newCount < prevCount && newCount > 0) {
+          console.log('[Collab] Partner disconnected - setting notification state');
+
+          // Clear any existing notification timeout
+          if (notificationTimeoutRef.current) {
+            console.log('[Collab] Clearing existing timeout');
+            clearTimeout(notificationTimeoutRef.current);
+          }
+
+          const message = "Your partner has disconnected from the session.";
+          console.log('[Collab] Setting notification:', message);
+          setNotification(message);
+
+          // Auto-hide notification after 5 seconds
+          const timeoutId = setTimeout(() => {
+            console.log('[Collab] Auto-hiding notification');
+            setNotification(null);
+            notificationTimeoutRef.current = null;
+          }, 5000);
+
+          notificationTimeoutRef.current = timeoutId;
+          console.log('[Collab] Timeout set:', timeoutId);
+        }
+
+        previousParticipantCount.current = newCount;
         setParticipants(payload.participants);
       }
     });
@@ -158,8 +221,21 @@ const CollabComponent: React.FC<CollabProps> = ({
     });
 
     return () => {
+      clearInterval(heartbeatInterval);
       socket.disconnect();
       socketRef.current = null;
+
+      // Notify matching service that user left the session
+      const matchingSocket = (window as any).__matchingSocket;
+      if (matchingSocket && user?.sub) {
+        console.log('[Collab] Notifying matching service of session leave (cleanup)');
+        matchingSocket.emit('leave_session', { userId: user.sub });
+      }
+
+      // Clean up notification timeout
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
     };
   }, [collabUrl, socketPath, roomId, token, topic, difficulty, user?.sub, user?.email]);
 
@@ -173,13 +249,103 @@ const CollabComponent: React.FC<CollabProps> = ({
     setCode(next);
   };
 
+  const handleDisconnect = () => {
+    if (socketRef.current) {
+      console.log('[Collab] Manual disconnect initiated');
+      socketRef.current.disconnect();
+      socketRef.current = null;
+      setConnected(false);
+    }
+
+    // Notify matching service that user left the session
+    const matchingSocket = (window as any).__matchingSocket;
+    if (matchingSocket && user?.sub) {
+      console.log('[Collab] Notifying matching service of session leave');
+      matchingSocket.emit('leave_session', { userId: user.sub });
+    }
+
+    // Give socket time to disconnect before navigating
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 100);
+  };
+
+  // Debug: Log notification state changes
+  useEffect(() => {
+    console.log('[Collab] Notification state changed:', notification);
+  }, [notification]);
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h1 style={{ textAlign: "left" }}>Collaborative Codespace</h1>
-        <span style={{ fontSize: 12, color: connected ? "green" : "gray" }}>
-          {connected ? "Connected" : "Disconnected"}
-        </span>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16, position: "relative" }}>
+      {/* Notification Popup */}
+      {notification && (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            backgroundColor: "#ff9800",
+            color: "white",
+            padding: "16px 24px",
+            borderRadius: 8,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            maxWidth: 400,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            animation: "slideIn 0.3s ease-out",
+          }}
+        >
+          <span style={{ fontSize: 20 }}>⚠️</span>
+          <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{notification}</span>
+          <button
+            onClick={() => {
+              if (notificationTimeoutRef.current) {
+                clearTimeout(notificationTimeoutRef.current);
+                notificationTimeoutRef.current = null;
+              }
+              setNotification(null);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontSize: 18,
+              padding: 0,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ textAlign: "left", margin: 0 }}>Collaborative Codespace</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ fontSize: 12, color: connected ? "green" : "gray" }}>
+            {connected ? "Connected" : "Disconnected"}
+          </span>
+          <button
+            onClick={handleDisconnect}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#dc3545",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#c82333")}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#dc3545")}
+          >
+            Disconnect
+          </button>
+        </div>
       </header>
 
       {/* Side-by-side layout */}
@@ -188,17 +354,19 @@ const CollabComponent: React.FC<CollabProps> = ({
           display: "flex",
           flexDirection: "row",
           gap: 24,
-          alignItems: "flex-start",
+          alignItems: "stretch",
           marginTop: 20,
+          height: "calc(100vh - 180px)",
+          overflow: "hidden",
         }}
       >
         {/* Question column */}
-        <div style={{ flex: 1, textAlign: "left" }}>
+        <div style={{ flex: 1, textAlign: "left", display: "flex", flexDirection: "column", minWidth: 0 }}>
           {question ? (
             <>
-              <h2 style={{ margin: 0 }}>{question.title}</h2>
+              <h2 style={{ margin: 0, flexShrink: 0 }}>{question.title}</h2>
               {(question.topic || question.difficulty) && (
-                <p style={{ fontSize: 14, color: "#555", marginTop: 4 }}>
+                <p style={{ fontSize: 14, color: "#555", marginTop: 4, flexShrink: 0 }}>
                   {question.topic && <>Topic: <strong>{question.topic}</strong></>}
                   {(question.topic && question.difficulty) && " · "}
                   {question.difficulty && <>Difficulty: <strong>{question.difficulty}</strong></>}
@@ -212,6 +380,9 @@ const CollabComponent: React.FC<CollabProps> = ({
                   borderRadius: 8,
                   marginTop: 8,
                   textAlign: "left",
+                  flex: 1,
+                  overflowY: "auto",
+                  margin: "8px 0 0 0",
                 }}
               >
                 {question.description}
@@ -223,18 +394,17 @@ const CollabComponent: React.FC<CollabProps> = ({
         </div>
 
         {/* Editor column */}
-        <div style={{ flex: 1 }}>
-          <label htmlFor="codespace" style={{ fontWeight: 600, display: "block", textAlign: "left" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <label htmlFor="codespace" style={{ fontWeight: 600, display: "block", textAlign: "left", flexShrink: 0 }}>
             Shared editor
           </label>
           <textarea
             id="codespace"
             value={code}
             onChange={onCodeChange}
-            rows={20}
             style={{
-              width: "100%",
-              minHeight: 400,
+              width: "calc(100% - 2px)",
+              flex: 1,
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               fontSize: 14,
               lineHeight: 1.5,
@@ -242,10 +412,13 @@ const CollabComponent: React.FC<CollabProps> = ({
               borderRadius: 8,
               border: "1px solid #d0d7de",
               textAlign: "left",
+              resize: "none",
+              minHeight: 0,
+              boxSizing: "border-box",
             }}
             placeholder="Type here to sync with your partner…"
           />
-          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8, textAlign: "left" }}>
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8, textAlign: "left", flexShrink: 0 }}>
             Participants:{" "}
             {participants.length ? (
               participants.map((p, i) => (

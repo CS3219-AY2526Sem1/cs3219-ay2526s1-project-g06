@@ -1,3 +1,8 @@
+// AI Assistance Disclosure:
+// Tool: Cursor (model: Claude Sonnet 4.5), date: 2025‑10‑13
+// Scope: How to to run validtors from mongooese on a findAndUpdate operation and return the new document inserted instead of the old one
+// Author review: Was suggested to use {new: true, runValidators: true} in the query, which did what was expected. 
+
 import {Router} from "express";
 import {Request, Response} from "express";
 import {Question} from "../../models/question";

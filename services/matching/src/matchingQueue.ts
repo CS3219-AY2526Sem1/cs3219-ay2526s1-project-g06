@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 class MatchingQueue {
   private queue: MatchRequest[] = [];
+  private activeSessions: Map<string, string> = new Map(); // userId -> roomId
 
   addToQueue(request: MatchRequest): void {
     this.queue.push(request);
@@ -10,6 +11,30 @@ class MatchingQueue {
 
   removeFromQueue(userId: string): void {
     this.queue = this.queue.filter((req) => req.userId !== userId);
+  }
+
+  removeBySocketId(socketId: string): void {
+    this.queue = this.queue.filter((req) => req.socketId !== socketId);
+  }
+
+  isUserInQueue(userId: string): boolean {
+    return this.queue.some((req) => req.userId === userId);
+  }
+
+  isUserInActiveSession(userId: string): boolean {
+    return this.activeSessions.has(userId);
+  }
+
+  addActiveSession(userId: string, roomId: string): void {
+    this.activeSessions.set(userId, roomId);
+  }
+
+  removeActiveSession(userId: string): void {
+    this.activeSessions.delete(userId);
+  }
+
+  getActiveSession(userId: string): string | undefined {
+    return this.activeSessions.get(userId);
   }
 
   findMatch(request: MatchRequest): { match: MatchRequest; matchedRequest: Match } | null {

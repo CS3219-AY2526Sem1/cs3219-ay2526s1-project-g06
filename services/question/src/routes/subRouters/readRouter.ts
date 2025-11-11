@@ -1,8 +1,24 @@
+// AI Assistance Disclosure:
+// Tool: Cursor (model: Claude Sonnet 4.5), date: 2025‑10‑13
+// Scope: How to generate 1 random document from mongodb database 
+// Author review: Was suggested to use aggregate with size 1, which was confirmed to be the correct approach from other sources such as stackoverflow, 
+// although it was never explicilty stated in mongodb documentaion. 
+
+// Tool: Cursor (model: Claude Sonnet 4.5), date: 2025‑11‑10
+// Scope: Generate a sorting helper function by diffficulty
+// Author review: The sortdiffculty function was modified to add typescript types 
+
 import {Router} from "express";
 import {Request, Response} from "express";
 import {Question} from "../../models/question";
 
 const router = Router();
+
+// helper sorting difficulty canonically function
+function sortDifficulty(difficulties: string[]): string[] {
+  const order: {[key:string]: number} = {"Easy": 1, "Medium": 2, "Hard": 3};
+  return difficulties.sort((x, y) => order[x] - order[y]);
+}
 
 // read (user + admin)
 // read random qn, no topic or difficulty given
@@ -138,6 +154,21 @@ router.get("/topics",
       }
     });
 
+// read all difficulties 
+router.get("difficulties",
+  async(req:Request, res:Response) => {
+    try {
+      const orderDifficulties = sortDifficulty(await Question.distinct("difficulty")); 
+        if (orderDifficulties.length === 0) {
+          return res.status(404).json({ error: "No difficulty found"});
+        }
+      return res.json(orderDifficulties);
+    } catch(error) {
+        console.error("Failed to read question difficulties: ", error);
+        return res.status(500).json({ error: "Failed"});
+    }
+  });
+
 // read all questions
 router.get("/questions",
     async(req:Request, res:Response) => {
@@ -177,8 +208,8 @@ router.get("/filtered/difficulties/topic/:topic",
     async(req:Request, res:Response) => {
       try {
         const {topic} = req.params;
-        // get filtered difficulties available based on selected topic, sort alphabetical 
-        const filteredDifficulties = (await Question.distinct("difficulty", {topic: topic})).sort(); 
+        // get filtered difficulties available based on selected topic, sort
+        const filteredDifficulties = sortDifficulty(await Question.distinct("difficulty", {topic: topic})); 
           // if no difficulty found 
           if (filteredDifficulties.length === 0) {
             return res.status(404).json({ error: "No difficulty found"});
