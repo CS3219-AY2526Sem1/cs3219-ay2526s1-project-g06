@@ -143,6 +143,33 @@ async function ensureRoomQuestion(roomId, topic, difficulty) {
   return p; // all concurrent joiners await this
 }
 
+
+const fetch = require('node-fetch');
+
+// add Question to history on disconnect
+const addQuestion = (question, userId, currentText) => {
+  if (currentUserId === null) {
+    return;
+  }
+  fetch(`/question-history/add-question`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      userId: userId,
+      title: question.title,
+      topic: question.topic,
+      difficulty: question.difficulty,
+  		description: question.description,
+  		submittedSolution: currentText,
+    }),
+  }).then((res) => res.json())
+    .then((data) => console.log(data))
+};
+
+
 io.on('connection', (socket) => {
   socket.on('join_room', async (payload = {}, ack) => {
     const { roomId, user, topic, difficulty } = payload;
@@ -150,6 +177,8 @@ io.on('connection', (socket) => {
 
     socket.data.user = user || { userId: socket.id };
     socket.join(roomId);
+
+    socket.data.userId = user?.userId || socket.id;
 
     const participants = getParticipants(io, roomId);
 
@@ -174,6 +203,9 @@ io.on('connection', (socket) => {
       };
     }
 
+    // store question data
+    socket.data.question = normalized
+
     // Send the question to the client
     if (typeof ack === 'function') {
       ack({
@@ -186,11 +218,26 @@ io.on('connection', (socket) => {
     socket.emit('collab:init', { question: normalized, code: '', participants });
     broadcastPresence(io, roomId);
   });
-
+  
   socket.on('codespace:change', ({ roomId, code, clientTs }) => {
     if (!roomId) return;
     socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
+    socket.data.currentCode = code;
   });
+
+	//on disconnect
+	socket.on('disconnect', async () => {
+		try {
+			await addQuestion({
+        title: socket.data.question.title,
+        description: socket.data.question.description,
+        topic: socket.data.question.topic,
+        difficulty: socket.data.question.difficulty,
+      }, socket.data.userId, socket.data.currentCode);
+		} catch (err) {
+      console.error(err);
+    }
+	});
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {
