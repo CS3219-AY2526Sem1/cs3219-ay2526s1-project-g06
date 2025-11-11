@@ -164,11 +164,10 @@ async function ensureRoomQuestion(roomId, topic, difficulty) {
   return p; // all concurrent joiners await this
 }
 
-const fetch = require('node-fetch');
 
 // add Question to history on disconnect
 const addQuestion = (question, userId, currentText) => {
-  if (currentUserId === null) {
+  if (userId === null) {
     return;
   }
   fetch(`/question-history/add-question`, {
