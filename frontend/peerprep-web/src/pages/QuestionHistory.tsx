@@ -137,7 +137,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
         <td>{question.topic}</td>
         <td>{question.difficulty}</td>
         <td>{question.date.toString()}</td>
-        <td><button onClick={() => deleteQuestionHistory()}>delete</button></td>
+        <td><button onClick={() => deleteQuestion(question._id)}>delete</button></td>
       </tr>;
   });
 
