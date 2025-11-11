@@ -41,16 +41,19 @@ server.use(express.json());
 // Set up schema
 const questionHistorySchema = new mongoose.Schema({
   userId: String,
-  question: String,
-  date: Date,
+  title: String,
+  topic: String,
+  difficulty: String,
+  description: String,
   submittedSolution: String,
-  suggestedSolution: String,
+  date: Date,
 });
 const QuestionHistory = new mongoose.model("Question", questionHistorySchema);
 
 async function startServer() {
   try {
     console.log("attempting to connect");
+    console.log(MONGO_URL);
     await mongoose.connect(MONGO_URL);
     console.log("connected to ", mongoose.connection.host);
     console.log("db name ", mongoose.connection.name);
@@ -83,18 +86,9 @@ async function startServer() {
     res.json("success");
   });
   
-  const testQuestion = new QuestionHistory({
-    userId: "1",
-    question: "Two sum",
-    date: Date.now(),
-    submittedSolution: "idk",
-    suggestedSolution: "use a dic",
-  });
-  
-  await testQuestion.save();
-  
   const questions = await QuestionHistory.find();
   console.log(questions);
+  console.log("hi");
 
   // remove all
 //  await QuestionHistory.deleteMany();
