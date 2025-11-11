@@ -139,24 +139,6 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           <th>Date</th>
           <th></th>
         </tr>
-        <tr>
-          <th></th>
-          <th>
-            <textarea value={questionText} style={{resize: "none"}} onChange={(e) => setQuestionText(e.target.value)}></textarea>
-          </th>
-          <th>
-            <textarea value={submittedSolution} style={{resize: "none"}} onChange={(e) => setSubmittedSolution(e.target.value)}></textarea>
-          </th>
-          <th>
-            <textarea value={suggestedSolution} style={{resize: "none"}} onChange={(e) => setSuggestedSolution(e.target.value)}></textarea>
-          </th>
-          <th>
-            no entry
-          </th>
-          <th>
-            <button onClick={addQuestion}>Add</button>
-          </th>
-        </tr>
 
         {/*filtering*/}
         <tr>
