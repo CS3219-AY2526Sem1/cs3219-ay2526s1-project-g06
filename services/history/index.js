@@ -91,7 +91,7 @@ async function startServer() {
   console.log("hi");
 
   // remove all
-  await QuestionHistory.deleteMany();
+//  await QuestionHistory.deleteMany();
 }
 
 async function addQuestion(question) {
