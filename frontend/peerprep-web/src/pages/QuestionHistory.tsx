@@ -151,7 +151,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           <th>Difficulty</th>
           <th>Date</th>
           <th></th>
-        <th><button onClick={() => deleteQuestion()}>delete all</button></th>
+        <th><button onClick={() => deleteQuestionHistory()}>delete all</button></th>
         </tr>
 
         {/*filtering*/}
