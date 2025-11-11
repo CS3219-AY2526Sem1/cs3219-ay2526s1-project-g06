@@ -166,7 +166,7 @@ async function ensureRoomQuestion(roomId, topic, difficulty) {
 
 
 // add Question to history on disconnect
-const addQuestion = (question, userId, currentText) => {
+const addQuestion = (question, userId) => {
   if (userId === null) {
     return;
   }
@@ -183,7 +183,7 @@ const addQuestion = (question, userId, currentText) => {
       topic: question.topic,
       difficulty: question.difficulty,
   		description: question.description,
-  		submittedSolution: currentText,
+  		submittedSolution: question.submittedSolution,
     }),
   }).then((res) => res.json())
     .then((data) => console.log(data))
@@ -327,7 +327,8 @@ io.on('connection', (socket) => {
         description: socket.data.question.description,
         topic: socket.data.question.topic,
         difficulty: socket.data.question.difficulty,
-      }, socket.data.userId, socket.data.currentCode);
+        submittedSolution: socket.data.currentCode,
+      }, socket.data.userId);
 		} catch (err) {
       console.error(err);
     }
