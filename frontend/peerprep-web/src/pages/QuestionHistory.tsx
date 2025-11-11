@@ -5,10 +5,13 @@ const BASE = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostn
 
 type QuestionHistory = {
   _id: string;
-  question: string;
-  submittedSolution: string;
-  suggestedSolution: string;
-  date: string;
+  userId: String,
+  title: String,
+  topic: String,
+  difficulty: String,
+  description: String,
+  submittedSolution: String,
+  date: Date,
 }
 
 type User = {
@@ -38,14 +41,16 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
 
   //temporary text of all questions
   const [allQuestions, setAllQuestions] = useState<QuestionHistory[]>([]);
+
+
   const [questionText, setQuestionText] = useState<string>("");
   const [submittedSolution, setSubmittedSolution] = useState<string>("");
   const [suggestedSolution, setSuggestedSolution] = useState<string>("");
 
   //filters
-  const [questionTextFilter, setQuestionTextFilter] = useState<string>("");
-  const [submittedSolutionFilter, setSubmittedSolutionFilter] = useState<string>("");
-  const [suggestedSolutionFilter, setSuggestedSolutionFilter] = useState<string>("");
+  const [titleFilter, setTitleFilter] = useState<string>("");
+  const [topicFilter, setTopicFilter] = useState<string>("");
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("");
 
   const getQuestions = (id: string | null) => {
     if (id === null) {
@@ -76,9 +81,9 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
       },
       body: JSON.stringify({
         userId: currentUserId,
-        question: questionText,
-        submittedSolution: submittedSolution,
-        suggestedSolution: suggestedSolution,
+        title: questionText,
+        topic: submittedSolution,
+        difficulty: suggestedSolution,
       }),
     }).then((res) => res.json())
       .then((data) => console.log(data))
@@ -88,7 +93,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
     setQuestionText("");
     setSubmittedSolution("");
     setSuggestedSolution("");
-  };
+  }; 
 
   const deleteQuestion = (_id: string) => {
     if (currentUserId === null) {
@@ -109,15 +114,15 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
   }
 
   const allQuestionsList = allQuestions.filter((question: QuestionHistory) => {
-    return question.question.includes(questionTextFilter) &&
-           question.submittedSolution.includes(submittedSolutionFilter) &&
-           question.suggestedSolution.includes(suggestedSolutionFilter);
+    return question.title.includes(titleFilter) &&
+           question.topic.includes(topicFilter) &&
+           question.difficulty.includes(difficultyFilter);
   }).map((question: QuestionHistory) => {
     return <tr key={question._id}>
         <td></td>
-        <td>{question.question}</td>
-        <td>{question.submittedSolution}</td>
-        <td>{question.suggestedSolution}</td>
+        <td>{question.title}</td>
+        <td>{question.topic}</td>
+        <td>{question.difficulty}</td>
         <td>{question.date}</td>
         <td><button onClick={() => deleteQuestion(question._id)}>delete</button></td>
       </tr>;
@@ -127,12 +132,12 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
     <table>
       <thead>
         <tr>
-          <th>Add question</th>
-          <th>Question</th>
-          <th>Submitted Solution</th>
-          <th>Suggested Solution</th>
+          <th></th>
+          <th>Title</th>
+          <th>Topic</th>
+          <th>Difficulty</th>
           <th>Date</th>
-          <th>Go to button</th>
+          <th></th>
         </tr>
         <tr>
           <th></th>
@@ -159,13 +164,13 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
             Filter
           </th>
           <th>
-            <textarea value={questionTextFilter} style={{resize: "none"}} onChange={(e) => setQuestionTextFilter(e.target.value)}></textarea>
+            <textarea value={titleFilter} style={{resize: "none"}} onChange={(e) => setTitleFilter(e.target.value)}></textarea>
           </th>
           <th>
-            <textarea value={submittedSolutionFilter} style={{resize: "none"}} onChange={(e) => setSubmittedSolutionFilter(e.target.value)}></textarea>
+            <textarea value={topicFilter} style={{resize: "none"}} onChange={(e) => setTopicFilter(e.target.value)}></textarea>
           </th>
           <th>
-            <textarea value={suggestedSolutionFilter} style={{resize: "none"}} onChange={(e) => setSuggestedSolutionFilter(e.target.value)}></textarea>
+            <textarea value={difficultyFilter} style={{resize: "none"}} onChange={(e) => setDifficultyFilter(e.target.value)}></textarea>
           </th>
           <th>
           </th>

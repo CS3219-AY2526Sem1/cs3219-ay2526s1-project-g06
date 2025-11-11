@@ -164,6 +164,31 @@ async function ensureRoomQuestion(roomId, topic, difficulty) {
   return p; // all concurrent joiners await this
 }
 
+const fetch = require('node-fetch');
+
+// add Question to history on disconnect
+const addQuestion = (question, userId, currentText) => {
+  if (currentUserId === null) {
+    return;
+  }
+  fetch(`/question-history/add-question`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      userId: userId,
+      title: question.title,
+      topic: question.topic,
+      difficulty: question.difficulty,
+  		description: question.description,
+  		submittedSolution: currentText,
+    }),
+  }).then((res) => res.json())
+    .then((data) => console.log(data))
+};
+
 // Periodic check for idle users
 setInterval(() => {
   const now = Date.now();
@@ -209,6 +234,8 @@ io.on('connection', (socket) => {
     socket.data.user = user || { userId: socket.id };
     socket.join(roomId);
 
+    socket.data.userId = user?.userId || socket.id;
+
     const participants = getParticipants(io, roomId);
     console.log(`[Collab] Room ${roomId} now has ${participants.length} participants:`, participants);
 
@@ -233,6 +260,9 @@ io.on('connection', (socket) => {
       };
     }
 
+    // store question data
+    socket.data.question = normalized
+
     // Send the question to the client
     if (typeof ack === 'function') {
       ack({
@@ -245,12 +275,13 @@ io.on('connection', (socket) => {
     socket.emit('collab:init', { question: normalized, code: '', participants });
     broadcastPresence(io, roomId);
   });
-
+  
   socket.on('codespace:change', ({ roomId, code, clientTs }) => {
     if (!roomId) return;
     // Update activity on code change
     userActivity.set(socket.id, Date.now());
     socket.to(roomId).emit('codespace:change', { code, updatedAt: Date.now(), clientTs });
+    socket.data.currentCode = code;
   });
 
   socket.on('disconnecting', () => {
@@ -290,6 +321,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+		try {
+			await addQuestion({
+        title: socket.data.question.title,
+        description: socket.data.question.description,
+        topic: socket.data.question.topic,
+        difficulty: socket.data.question.difficulty,
+      }, socket.data.userId, socket.data.currentCode);
+		} catch (err) {
+      console.error(err);
+    }
+
     // 'disconnect' fires AFTER the socket has left all rooms
     userActivity.delete(socket.id);
     console.log(`[Collab] User fully disconnected: ${socket.id}`);
