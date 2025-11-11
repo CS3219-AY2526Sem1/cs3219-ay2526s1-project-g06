@@ -5,12 +5,12 @@ const BASE = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostn
 
 type QuestionHistory = {
   _id: string;
-  userId: String,
-  title: String,
-  topic: String,
-  difficulty: String,
-  description: String,
-  submittedSolution: String,
+  userId: string,
+  title: string,
+  topic: string,
+  difficulty: string,
+  description: string,
+  submittedSolution: string,
   date: Date,
 }
 
@@ -123,7 +123,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
         <td>{question.title}</td>
         <td>{question.topic}</td>
         <td>{question.difficulty}</td>
-        <td>{question.date}</td>
+        <td>{question.date.toString()}</td>
         <td><button onClick={() => deleteQuestion(question._id)}>delete</button></td>
       </tr>;
   });
