@@ -320,7 +320,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
 		try {
 			await addQuestion({
         title: socket.data.question.title,
