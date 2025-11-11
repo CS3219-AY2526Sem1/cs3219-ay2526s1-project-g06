@@ -113,6 +113,19 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
       .then(() => getQuestions(currentUserId));
   }
 
+  const deleteQuestionHistory = async () => {
+		const baseUrl = import.meta.env.VITE_BACKEND_URL
+    if (!user) return;
+    try {
+			await fetch(`${baseUrl}/question-history/delete-user/${currentUserId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   const allQuestionsList = allQuestions.filter((question: QuestionHistory) => {
     return question.title.includes(titleFilter) &&
            question.topic.includes(topicFilter) &&
@@ -124,7 +137,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
         <td>{question.topic}</td>
         <td>{question.difficulty}</td>
         <td>{question.date.toString()}</td>
-        <td><button onClick={() => deleteQuestion(question._id)}>delete</button></td>
+        <td><button onClick={() => deleteQuestionHistory()}>delete</button></td>
       </tr>;
   });
 
@@ -138,6 +151,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           <th>Difficulty</th>
           <th>Date</th>
           <th></th>
+        <th><button onClick={() => deleteQuestion()}>delete all</button></th>
         </tr>
 
         {/*filtering*/}

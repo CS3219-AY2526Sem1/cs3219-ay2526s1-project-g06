@@ -85,6 +85,16 @@ async function startServer() {
     deleteQuestion(req.body);
     res.json("success");
   });
+
+  server.delete("/question-history/delete-user/:userId", async (req, res) => {
+    const { userId } = req.params;
+     
+    try {
+      await QuestionHistory.deleteMany({ userId });
+    } catch (err) {
+      console.log(err);
+    }
+  });
   
   const questions = await QuestionHistory.find();
   console.log(questions);

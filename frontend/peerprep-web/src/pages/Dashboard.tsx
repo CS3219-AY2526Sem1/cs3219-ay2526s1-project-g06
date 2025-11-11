@@ -199,8 +199,24 @@ export default function Dashboard() {
     return;
   }
 
+  const deleteQuestionHistory = async () => {
+		const baseUrl = import.meta.env.VITE_BACKEND_URL
+    if (!user) return;
+    try {
+			await fetch(`${baseUrl}/question-history/delete-user/${user.sub}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   try {
     console.log('🗑️ Dashboard: Starting account deletion...');
+
+    // 0. Delete question history
+    await deleteQuestionHistory();
     
     // 1. Delete account via backend (deletes from Firebase + MongoDB)
     await deleteAccount();
