@@ -170,7 +170,8 @@ const addQuestion = (question, userId, currentText) => {
   if (userId === null) {
     return;
   }
-  fetch(`/question-history/add-question`, {
+  const baseUrl = process.env.QUESTION_HISTORY_URL || "http://localhost:4005";
+  fetch(`${baseUrl}/question-history/add-question`, {
     method: "POST",
     credentials: "include",
     headers: {
