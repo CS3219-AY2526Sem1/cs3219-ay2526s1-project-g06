@@ -1,6 +1,6 @@
 /* AI Assistance Disclosure
 Tool: ChatGPT-5
-Scope: Generated schema and used for debugging
+Scope: Generated schema and used for debugging and boilerplate for server code
 Author review: I validated correctness, edited for style
 */
 import express from "express";

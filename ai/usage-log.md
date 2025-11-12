@@ -106,9 +106,11 @@ history/index.js
 # Prompt/Command:
 Generate a schema for the questions
 Help with debugging
+Generate boilerplate for server setup
 
 # Output Summary:
 Generated schema and helped with debugging
+Generated boilerplate for server setup
 
 # Action Taken:
 -Modified
@@ -131,11 +133,13 @@ QuestionHistory.tsx
 Generate type for question history
 Add typing to each function
 Help with debugging
+Generate boilerplate for fetch calls
 
 # Output Summary:
 Generated a type
 Added typing to each function
 Helped with debugging
+Generated boilerplate for fetch calls
 
 # Action Taken:
 -Modified
