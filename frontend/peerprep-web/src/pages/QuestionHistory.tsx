@@ -1,6 +1,6 @@
 /* AI Assistance Disclosure
 Tool: ChatGPT-5
-Scope: Generated types and used for debugging
+Scope: Generated types and used for debugging and boilerplate for fetch calls
 Author review: I validated correctness, edited for style
 */
 import { useEffect, useState } from 'react';
@@ -73,32 +73,6 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
       .then((data: QuestionHistory[]) => setAllQuestions(data));
   };
 
-  //one button to add question
-  const addQuestion = () => {
-    if (currentUserId === null) {
-      return;
-    }
-    fetch(`${BASE}/question-history/add-question`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId: currentUserId,
-        title: questionText,
-        topic: submittedSolution,
-        difficulty: suggestedSolution,
-      }),
-    }).then((res) => res.json())
-      .then((data) => console.log(data))
-      .then(() => getQuestions(currentUserId));
-
-    //reset values
-    setQuestionText("");
-    setSubmittedSolution("");
-    setSuggestedSolution("");
-  }; 
 
   const deleteQuestion = (_id: string) => {
     if (currentUserId === null) {
