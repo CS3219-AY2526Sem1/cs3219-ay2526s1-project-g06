@@ -117,7 +117,7 @@ const QuestionHistoryComponent = ({ user } : QuestionHistoryProps) => {
           <th>Difficulty</th>
           <th>Date</th>
           <th></th>
-        <th>/th>
+        <th></th>
         </tr>
 
         {/*filtering*/}
