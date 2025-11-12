@@ -91,3 +91,54 @@ The AI generated a helper function to sort difficulty but was not entirely corre
 
 # Author Notes:
 Added typescript types to the sortDifficulty function and it works as intended.
+
+
+
+# Date/Time:
+2025‑11‑12
+
+# Tool:
+ChatGPT-5
+
+# File Affected:
+history/index.js
+
+# Prompt/Command:
+Generate a schema for the questions
+Help with debugging
+
+# Output Summary:
+Generated schema and helped with debugging
+
+# Action Taken:
+-Modified
+
+# Author Notes:
+I validated correctness, edited for style
+
+
+
+# Date/Time:
+2025‑11‑12
+
+# Tool:
+ChatGPT-5
+
+# File Affected:
+QuestionHistory.tsx
+
+# Prompt/Command:
+Generate type for question history
+Add typing to each function
+Help with debugging
+
+# Output Summary:
+Generated a type
+Added typing to each function
+Helped with debugging
+
+# Action Taken:
+-Modified
+
+# Author Notes:
+I validated correctness, edited for style
