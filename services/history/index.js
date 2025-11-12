@@ -1,6 +1,6 @@
 /* AI Assistance Disclosure
 Tool: ChatGPT-5
-Scope: Generated schema and used for debugging and boilerplate for server code
+Scope: Generated schema and used for debugging and boilerplate for server code and verification
 Author review: I validated correctness, edited for style
 */
 import express from "express";
@@ -43,6 +43,15 @@ server.use(cors({
 }));
 server.use(express.json());
 
+// only allow adds with secret
+const verifyAddAllowed = (req, res, next) => {
+  const secret = req.get("authorised-add");
+  if (secret !== process.env.QUESTION_HISTORY_ADD_SECRET) {
+    return res.status(403).json({ error: "Unauthorised"});
+  }
+  next();
+}
+
 // Set up schema
 const questionHistorySchema = new mongoose.Schema({
   userId: String,
@@ -69,7 +78,7 @@ async function startServer() {
   server.listen(PORT, () => {
     console.log("hi");
   });
-  server.post("/question-history/add-question", (req, res) => {
+  server.post("/question-history/add-question", verifyAddAllowed, (req, res) => {
     console.log("post request");
     addQuestion(req.body);
     res.json("success");

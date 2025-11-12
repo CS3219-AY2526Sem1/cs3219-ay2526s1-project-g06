@@ -176,6 +176,7 @@ const addQuestion = (question, userId) => {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "authorised-add": process.env.QUESTION_HISTORY_ADD_SECRET,
     },
     body: JSON.stringify({
       userId: userId,
