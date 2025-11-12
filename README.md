@@ -45,3 +45,29 @@ PeerPrep is a collaborative coding platform that matches users to solve coding q
 - License: apache-2.0
 - Dataset: https://huggingface.co/datasets/BAAI/TACO
 - Copyright: Beijing Academy of Artificial Intelligence (BAAI)
+
+---
+
+## AI Use Disclosure (CS3219 Policy Compliance)
+
+### Project-Level AI Use Summary
+
+**Tools Used:** Claude Code (Claude Sonnet 4.5)
+
+**Team Member Using AI:** All
+
+**Prohibited Phases Avoided:**
+- Requirements elicitation and prioritization
+- Architecture and design decisions
+- Sprint planning and backlog consolidation
+
+**Allowed Uses:**
+- **Debugging assistance:** Identified and fixed deployment script issues (Firebase JSON handling, YAML syntax, SSH variable expansion, cookie settings)
+- **Implementation code:** Generated migration logic for user profile completion feature
+- **Refactoring:** Improved deployment script structure and secret handling
+
+**Verification:** All AI-generated outputs were reviewed, understood, edited, and tested by the author (LuBolin).
+
+### Detailed Usage Log
+
+For detailed prompts, responses, and usage context, see [/ai/usage-log.md](/ai/usage-log.md).
