@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../auth/AuthContext";
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs';
 
 const getCollabUrl = () => {
   if (import.meta.env.VITE_COLLAB_SERVICE_URL) return import.meta.env.VITE_COLLAB_SERVICE_URL;
@@ -92,6 +94,7 @@ const CollabComponent: React.FC<CollabProps> = ({
   const collabUrl = useMemo(getCollabUrl, []);
   const socketPath = useMemo(getSocketPath, []);
   const { user } = useAuth();
+  const [lang, setLang] = useState<'java' | 'c' | 'python'>('python');
 
   const emitCodeChange = useMemo(
     () =>
@@ -185,7 +188,7 @@ const CollabComponent: React.FC<CollabProps> = ({
           willShowNotification: prevCount > 0 && newCount < prevCount && newCount > 0
         });
 
-        // Detect when someone leaves (count decreased and we're not alone)
+        // Detect when someone le aves (count decreased and we're not alone)
         if (prevCount > 0 && newCount < prevCount && newCount > 0) {
           console.log('[Collab] Partner disconnected - setting notification state');
 
@@ -398,23 +401,46 @@ const CollabComponent: React.FC<CollabProps> = ({
           <label htmlFor="codespace" style={{ fontWeight: 600, display: "block", textAlign: "left", flexShrink: 0 }}>
             Shared editor
           </label>
-          <textarea
-            id="codespace"
+
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value as any)}
+          style={{ alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <option value="java">Java</option>
+          <option value="c">C</option>
+          <option value="python">Python</option>
+        </select>
+          <Editor
             value={code}
-            onChange={onCodeChange}
+            onValueChange={(next) => {
+              if (suppressNextLocalApply.current) {
+                suppressNextLocalApply.current = false;
+              } else {
+                emitCodeChange({ code: next, clientTs: Date.now() });
+              }
+              setCode(next);
+            }}
+            highlight={(src) => {
+              const grammar = (languages as any)[lang] ?? languages.none;
+              return highlight(src, grammar, lang);
+            }}     
+            padding={12}
+            textareaId="codespace"
             style={{
               width: "calc(100% - 2px)",
               flex: 1,
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               fontSize: 14,
               lineHeight: 1.5,
-              padding: 12,
               borderRadius: 8,
               border: "1px solid #d0d7de",
               textAlign: "left",
-              resize: "none",
               minHeight: 0,
               boxSizing: "border-box",
+              height: "100%",
+              overflow: "auto",
+              background: "#f6f8fa",
             }}
             placeholder="Type here to sync with your partner…"
           />

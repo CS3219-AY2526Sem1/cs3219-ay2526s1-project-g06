@@ -8,6 +8,8 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
+    "prismjs": "^1.30.0",
+    "react-simple-code-editor": "^0.14.1",
     "socket.io": "^4.8.1"
   },
   "scripts": {

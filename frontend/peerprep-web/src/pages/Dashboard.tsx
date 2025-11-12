@@ -258,7 +258,6 @@ export default function Dashboard() {
 
       {/* Top Left Buttons - Profile and Logout */}
       <div style={{ 
-        position: 'absolute', 
         top: '1rem', 
         left: '1rem',
         zIndex: 10,
@@ -331,8 +330,8 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+      <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem"}}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", marginTop: "2rem"}}>
           <h1>Welcome, {user?.displayName}</h1>
         </div>
 
