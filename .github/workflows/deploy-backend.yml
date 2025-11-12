@@ -116,7 +116,7 @@ jobs:
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
             echo "QUESTION_SERVICE_URL=${QUESTION_SERVICE_URL}" >> services/collab/.env
             echo "QUESTION_HISTORY_URL=${QUESTION_HISTORY_URL}" >> services/collab/.env
-            echo "QUESTION_HISTORY_ADD_SECRET=${ QUESTION_HISTORY_ADD_SECRET}" >> services/collab/.env
+            echo "QUESTION_HISTORY_ADD_SECRET=${QUESTION_HISTORY_ADD_SECRET}" >> services/collab/.env
             echo "✓ Created services/collab/.env"
 
             # Question History Service .env
@@ -124,7 +124,7 @@ jobs:
             echo "NODE_ENV=${NODE_ENV}" >> services/history/.env
             echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/history/.env
             echo "MONGO_URL=${MONGO_URL_QUESTION_HISTORY}" >> services/history/.env
-            echo "QUESTION_HISTORY_ADD_SECRET=${ QUESTION_HISTORY_ADD_SECRET}" >> services/history/.env
+            echo "QUESTION_HISTORY_ADD_SECRET=${QUESTION_HISTORY_ADD_SECRET}" >> services/history/.env
             echo "✓ Created services/history/.env"
 
             # Clean up the temporary Firebase JSON file
