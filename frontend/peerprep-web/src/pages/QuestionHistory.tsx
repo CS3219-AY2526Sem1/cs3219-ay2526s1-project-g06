@@ -1,3 +1,8 @@
+/* AI Assistance Disclosure
+Tool: ChatGPT-5
+Scope: Generated types and used for debugging
+Author review: I validated correctness, edited for style
+*/
 import { useEffect, useState } from 'react';
 import { useAuth } from "../auth/AuthContext";
 
