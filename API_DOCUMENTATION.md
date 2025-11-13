@@ -430,3 +430,119 @@ Common HTTP status codes:
    - Topics are sorted alphabetically
    - Difficulties follow canonical order: Easy → Medium → Hard
 
+
+# Question History Service API Documentation
+
+## Overview
+The Question History Service provides endpoints for storing, retrieving, and deleting users’ question history records.
+
+## Authentication & Authorization
+- **Add operations**: Require a secret header (`authorised-add`)
+- **Read and Delete operations**: No authentication required
+
+---
+
+## Endpoints
+
+### 1. Add Question
+**POST** `/question-history/add-question`
+
+Adds a question record to the database.
+
+#### Headers
+```
+authorised-add: <SECRET_VALUE>
+```
+
+#### Request Body
+```json
+{
+  "userId": "string",
+  "title": "string",
+  "topic": "string",
+  "difficulty": "string",
+  "description": "string",
+  "submittedSolution": "string"
+}
+```
+
+#### Success Response (200)
+```json
+"success"
+```
+
+#### Error Response (403)
+```json
+{
+  "error": "Unauthorised"
+}
+```
+
+---
+
+### 2. Get Questions
+**POST** `/question-history/get-questions`
+
+Fetches all question history records matching the given `userId`.
+
+#### Request Body
+```json
+{
+  "userId": "string"
+}
+```
+
+#### Success Response (200)
+```json
+[
+  {
+    "_id": "string",
+    "userId": "string",
+    "title": "string",
+    "topic": "string",
+    "difficulty": "string",
+    "description": "string",
+    "submittedSolution": "string",
+    "date": "string"
+  }
+]
+```
+
+---
+
+### 3. Delete Single Question
+**POST** `/question-history/delete-question`
+
+Deletes a single question record matching the provided fields.
+
+#### Request Body
+```json
+{
+  "userId": "string",
+  "title": "string",
+  "topic": "string",
+  "difficulty": "string",
+  "description": "string",
+  "submittedSolution": "string"
+}
+```
+
+#### Success Response (200)
+```json
+"success"
+```
+
+---
+
+### 4. Delete All Questions for a User
+**DELETE** `/question-history/delete-user/:userId`
+
+Deletes all question records for a given user.
+
+#### Path Parameters
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | string | The unique ID of the user |
+
+> **Note:** This endpoint does not return a JSON response or success message.
+
