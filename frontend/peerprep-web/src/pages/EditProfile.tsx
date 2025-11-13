@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: GitHub Copilot, date: 2025-10-30
+ * Scope: Generated initial form structure and state management for profile editing.
+ *        Suggested fetch API call structure and error handling patterns.
+ *        Generated inline styling for form components and buttons.
+ * Author review: Modified API endpoint integration with our backend.
+ *                Verfied correctness of state management and form submission logic.
+ */
+
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useNavigate } from 'react-router-dom';

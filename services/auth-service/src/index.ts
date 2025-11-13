@@ -64,7 +64,7 @@ app.post("/auth/verify", async (req, res) => {
   }
 });
   } catch (error: any) {
-    console.error('❌ Auth Service: Token verification failed:', error.message);
+    console.error('Auth Service: Token verification failed:', error.message);
     res.status(401).json({ 
       authenticated: false,
       error: "Invalid or expired session" 
@@ -78,7 +78,7 @@ app.post("/auth/session", async (req, res) => {
     const { idToken } = req.body;
 
     if (!idToken) {
-      console.error('❌ Auth Service: No idToken in request body');
+      console.error('Auth Service: No idToken in request body');
       return res.status(400).json({ error: "ID token required" });
     }
 
@@ -88,7 +88,7 @@ app.post("/auth/session", async (req, res) => {
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
 
-    console.log('✅ Auth Service: Session created for user:', decodedToken.uid);
+    console.log('Auth Service: Session created for user:', decodedToken.uid);
 
     // ALWAYS fetch full user data from Firebase - don't rely on token claims
     let displayName = null;
@@ -117,7 +117,7 @@ app.post("/auth/session", async (req, res) => {
         photoURL = `${baseUrl}=s400-c`;
       }
 
-      console.log('✅ Auth Service: User data fetched:', {
+      console.log('Auth Service: User data fetched:', {
         uid: userRecord.uid,
         email: email,
         displayName: displayName,
@@ -125,7 +125,7 @@ app.post("/auth/session", async (req, res) => {
         profileCompleted: profileCompleted
       });
     } catch (error: any) {
-      console.error('⚠️ Auth Service: Failed to fetch full user data:', error.message);
+      console.error('Auth Service: Failed to fetch full user data:', error.message);
       // Fallback to token claims if Firebase fetch fails
       displayName = decodedToken.name || null;
       photoURL = decodedToken.picture || null;
@@ -166,7 +166,7 @@ app.post("/auth/session", async (req, res) => {
       }
     });
   } catch (error: any) {
-    console.error('❌ Auth Service: Session creation failed:', error.message);
+    console.error('Auth Service: Session creation failed:', error.message);
     res.status(401).json({ error: "Invalid ID token", details: error.message });
   }
 });
@@ -205,7 +205,7 @@ app.get("/auth/me", async (req, res) => {
       }
     });
   } catch (error: any) {
-    console.error('❌ Auth Service: Failed to get user:', error.message);
+    console.error('Auth Service: Failed to get user:', error.message);
     res.status(401).json({ error: "Invalid or expired session" });
   }
 });
@@ -247,7 +247,7 @@ app.put("/auth/profile", async (req, res) => {
 
     await auth.setCustomUserClaims(uid, customClaims);
 
-    console.log('✅ Auth Service: Profile updated for user:', uid);
+    console.log('Auth Service: Profile updated for user:', uid);
 
     // Fetch updated user data
     const userRecord = await auth.getUser(uid);
@@ -265,7 +265,7 @@ app.put("/auth/profile", async (req, res) => {
       }
     });
   } catch (error: any) {
-    console.error('❌ Auth Service: Profile update failed:', error.message);
+    console.error('Auth Service: Profile update failed:', error.message);
     res.status(500).json({ error: "Failed to update profile", details: error.message });
   }
 });
@@ -276,10 +276,10 @@ app.post("/auth/revoke", async (req, res) => {
     const sessionCookie = req.cookies.session || req.body.sessionToken;
     
     if (sessionCookie) {
-      console.log('🔍 Auth Service: Revoking session...');
+      console.log('Auth Service: Revoking session...');
       const decodedClaims = await auth.verifySessionCookie(sessionCookie);
       await auth.revokeRefreshTokens(decodedClaims.uid);
-      console.log('✅ Auth Service: Session revoked for user:', decodedClaims.uid);
+      console.log('Auth Service: Session revoked for user:', decodedClaims.uid);
     }
 
     res.clearCookie("session");
@@ -292,5 +292,5 @@ app.post("/auth/revoke", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Auth service running on port ${PORT}`);
+  console.log(`Auth service running on port ${PORT}`);
 });

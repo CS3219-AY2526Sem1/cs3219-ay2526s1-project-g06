@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userData = await me();
       if (userData) {
-        // Prefer Firebase photoURL if available (fresher from Google)
+        // Prefer Firebase photoURL if available 
         const photoURL = firebaseUser?.photoURL || userData.photoURL;
         console.log('🔄 AuthContext: Refreshed user data:', { 
           email: userData.email, 

@@ -1,3 +1,8 @@
+// AI Assistance Disclosure
+// Tool: Copilot Claude 4.5, date 2025-10-03
+// Scope: Implentation of User Model after I gave AI the schema design and fields that I wanted in my User Model
+// Author Review: Validated Correctness
+
 import mongoose, { Document, Schema, Model } from "mongoose";
 
 export interface IUser extends Document {
@@ -8,12 +13,11 @@ export interface IUser extends Document {
   role: string;
   bio?: string;
   language?: string;
-  profileCompleted: boolean; // Add this field
+  profileCompleted: boolean; 
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Add interface for static methods
 interface IUserModel extends Model<IUser> {
   upsertFromAuth(authData: {
     uid: string;
@@ -37,12 +41,11 @@ const userSchema: Schema = new Schema({
   role: { type: String, default: 'user' },
   bio: { type: String },
   language: { type: String },
-  profileCompleted: { type: Boolean, default: false }, // Add this line
+  profileCompleted: { type: Boolean, default: false }, 
 }, {
   timestamps: true
 });
 
-// Update your existing upsertFromAuth method
 userSchema.statics.upsertFromAuth = async function(authData: {
   uid: string;
   email: string;
@@ -53,7 +56,6 @@ userSchema.statics.upsertFromAuth = async function(authData: {
     const existingUser = await this.findOne({ uid: authData.uid });
     
     if (existingUser) {
-      // Update existing user but preserve profileCompleted
       return await this.findOneAndUpdate(
         { uid: authData.uid },
         {
@@ -63,14 +65,13 @@ userSchema.statics.upsertFromAuth = async function(authData: {
         { new: true }
       );
     } else {
-      // Create new user with explicit profileCompleted: false
       const newUser = await this.create({
         uid: authData.uid,
         email: authData.email,
         displayName: authData.displayName,
         photoURL: authData.photoURL || null,
         role: 'user',
-        profileCompleted: false, // Explicitly set to false
+        profileCompleted: false, 
       });
       return newUser;
     }
@@ -80,7 +81,6 @@ userSchema.statics.upsertFromAuth = async function(authData: {
   }
 };
 
-// Update your existing updateProfile method
 userSchema.statics.updateProfile = async function(uid: string, profileData: {
   displayName?: string;
   bio?: string;
@@ -91,7 +91,7 @@ userSchema.statics.updateProfile = async function(uid: string, profileData: {
       { uid },
       {
         ...profileData,
-        profileCompleted: true, // Set to true when profile is completed
+        profileCompleted: true, 
       },
       { new: true }
     );

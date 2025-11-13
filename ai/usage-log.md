@@ -367,3 +367,103 @@ Suggested echo commands instead of cat heredoc
 
 # Author Notes:
 Validated YAML compliance, tested workflow
+
+
+
+# Date/Time:
+2025-10-01
+
+# Tool:
+Github Copilot (Claude Sonnet 4.5)
+
+# Prompt/Command:
+Boilerplate generation and package installation for React + Vite app
+
+# Output Summary:
+Provided commands to fetch using npm to get packages for React and Vite basic templates
+
+# Action Taken:
+-Accepted as-is
+
+# Author Notes:
+Validated to have installed everything
+
+
+
+# Date/Time:
+2025-10-01
+
+# Tool:
+Github Copilot (Claude Sonnet 4.5)
+
+# Prompt/Command:
+I have decided to use firebase for my auth and my firebase app has been set up, what are the .env contents i need to retrieve from my firebase app to use it?
+
+# Output Summary:
+Provided and guided me how to add the credentials from my firebase app to link my auth service to my firebase app
+
+# Action Taken:
+-Accepted as is
+
+# Author Notes:
+Validated to have be linked and working
+
+
+
+# Date/Time:
+2025-10-20
+
+# Tool:
+Github Copilot (Claude Sonnet 4.5)
+
+# Prompt/Command:
+I would like to connect to MongoDB atlas with my User Service, what would be the steps?
+
+# Output Summary:
+Provided and guided me how to add the MongoDB connection string to my env and connect in `services/user/src/index.ts`
+
+# Action Taken:
+-Modified
+
+# Author Notes:
+Verrified Connection works and added logging messages for debugging
+
+
+
+# Date/Time:
+2025-10-18
+
+# Tool:
+Github Copilot (Claude Sonnet 4.5)
+
+# Prompt/Command:
+Give me the boiletplate code for a cookie session managment for Express
+
+# Output Summary:
+Suggested cookie options with secure, httpOnly, sameSite settings
+
+# Action Taken:
+-Modified
+
+# Author Notes:
+Implemented the suggested secure cookie settings, Added environment-based domain configuration, Ensured sameSite: 'none' for cross-origin in production, Verified cookies work across our microservices architecture
+
+
+
+# Date/Time:
+2025-10-18
+
+# Tool:
+Github Copilot (Claude Sonnet 4.5)
+
+# Prompt/Command:
+Give me the boiletplate code for a React Context Managment for managing Firebase
+
+# Output Summary:
+Generated AuthContext with user state, loading state, and Firebase auth observer
+
+# Action Taken:
+-Modified
+
+# Author Notes:
+Verified for correctness

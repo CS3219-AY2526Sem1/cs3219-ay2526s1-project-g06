@@ -13,7 +13,7 @@ export async function createSession(firebaseToken: string) {
       "Content-Type": "application/json"
     },
     credentials: "include",
-    body: JSON.stringify({ idToken: firebaseToken })  // ← Add this line
+    body: JSON.stringify({ idToken: firebaseToken }) 
   });
   return json<{ user: { 
     sub: string; 

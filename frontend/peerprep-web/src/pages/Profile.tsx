@@ -136,12 +136,12 @@ const Profile = () => {
                     border: '3px solid #e5e7eb'
                   }}
                   onLoad={() => {
-                    console.log('✅ Profile image loaded successfully!');
-                    console.log('📸 Image URL:', user.photoURL);
+                    console.log('Profile image loaded successfully!');
+                    console.log('Image URL:', user.photoURL);
                   }}
                   onError={(e) => {
-                    console.error('❌ Profile image failed to load');
-                    console.error('📸 Failed URL:', user.photoURL);
+                    console.error('Profile image failed to load');
+                    console.error('Failed URL:', user.photoURL);
                     setImageError(true);
                   }}
                 />
