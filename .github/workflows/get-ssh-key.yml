@@ -1,0 +1,16 @@
+name: Get SSH Key (Temporary)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decode and display SSH key
+        run: |
+          echo "Copy this ENTIRE block (including BEGIN/END lines):"
+          echo "========================================"
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d
+          echo "========================================"
+          echo "Save this to a file called peerprep-key.pem"
