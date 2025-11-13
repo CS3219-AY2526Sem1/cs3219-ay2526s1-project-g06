@@ -431,6 +431,11 @@ Common HTTP status codes:
    - Difficulties follow canonical order: Easy → Medium → Hard
 
 
+
+AI Assistance Disclosure:
+Tool: ChatGPT-5, date: 2025‑11‑14
+Scope: Generated api documentation for question history service, after question history service was finalised 
+Author review: I validated correctness.
 # Question History Service API Documentation
 
 ## Overview
@@ -513,7 +518,7 @@ Fetches all question history records matching the given `userId`.
 ### 3. Delete Single Question
 **POST** `/question-history/delete-question`
 
-Deletes a single question record matching the provided fields.
+Deletes a single question record matching any combination of the provided fields.
 
 #### Request Body
 ```json
