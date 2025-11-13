@@ -1,3 +1,13 @@
+/*
+ * AI Assistance Disclosure:
+ * Tool: GitHub Copilot + ChatGPT (Claude Sonnet 4.5), date: 2025-10-30
+ * Scope: Generated initial form component structure with React state management.
+ *        Suggested form validation and submission logic.
+ *        Generated language selection options and form styling.
+ * Author review: Modified to integrate with our PUT /auth/profile endpoint.
+ *                Verified correctness of form state handling and submission flow.
+ */
+
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { updateProfile } from '../api/auth';
@@ -20,11 +30,11 @@ export default function ProfileSetup() {
     setError('');
 
     try {
-      console.log('📝 ProfileSetup: Submitting profile data...');
+      console.log('ProfileSetup: Submitting profile data...');
       await updateProfile(formData);
       
       // Update user context with new profile data
-      console.log('🔄 ProfileSetup: Refreshing user data...');
+      console.log('ProfileSetup: Refreshing user data...');
       await refreshUser();
 
       navigate('/dashboard');

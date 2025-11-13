@@ -12,15 +12,15 @@ async function main() {
   // Connect to MongoDB Atlas
   const mongoUrl = process.env.MONGO_URL;
   if (!mongoUrl) {
-    console.error("❌ MONGO_URL environment variable is required");
+    console.error("MONGO_URL environment variable is required");
     process.exit(1);
   }
   
   try {
     await mongoose.connect(mongoUrl);
-    console.log("✅ Connected to MongoDB Atlas");
+    console.log("Connected to MongoDB Atlas");
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error);
+    console.error("MongoDB connection failed:", error);
     process.exit(1);
   }
 
@@ -33,7 +33,6 @@ async function main() {
   const corsOptions = {
     credentials: true,
     origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean | string | string[]) => void) {
-      // Allow requests with no origin (like mobile apps or Postman)
       if (!origin) return callback(null, true);
 
       // In production, use the configured CORS_ORIGIN
@@ -65,7 +64,7 @@ async function main() {
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          console.warn(`⚠️ CORS blocked origin in dev: ${origin}`);
+          console.warn(`CORS blocked origin in dev: ${origin}`);
           callback(null, true); // Be permissive in dev
         }
       }
@@ -84,8 +83,8 @@ async function main() {
 
   const port = Number(process.env.PORT) || 4001;
   app.listen(port, "0.0.0.0", () => {
-    console.log(`🚀 User service v1.0.3 running on http://localhost:${port}`);
-    console.log(`   Auth service: ${process.env.AUTH_SERVICE_URL || 'http://localhost:4000'}`);
+    console.log(`User service v1.0.3 running on http://localhost:${port}`);
+    console.log(`Auth service: ${process.env.AUTH_SERVICE_URL || 'http://localhost:4000'}`);
   });
 }
 

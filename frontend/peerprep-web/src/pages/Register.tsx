@@ -74,14 +74,14 @@ export default function Register() {
 
       // Navigate based on profile completion status
       if (sessionResponse.user.profileCompleted) {
-        console.log('➡️ Register: Navigating to dashboard');
+        console.log('Register: Navigating to dashboard');
         navigate('/dashboard');
       } else {
         console.log('➡️ Register: Navigating to profile setup');
         navigate('/profile/setup');
       }
     } catch (err: any) {
-      console.error('❌ Register: Email registration failed:', err);
+      console.error('Register: Email registration failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -97,15 +97,15 @@ export default function Register() {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       
-      console.log('✅ Register: Google sign-up successful:', userCredential.user.email);
-      console.log('🔑 Register: Getting ID token...');
+      console.log('Register: Google sign-up successful:', userCredential.user.email);
+      console.log('Register: Getting ID token...');
       const idToken = await userCredential.user.getIdToken();
       
-      console.log('📤 Register: Creating backend session...');
+      console.log('Register: Creating backend session...');
       const sessionResponse = await createSession(idToken);
       
-      console.log('✅ Register: Session created:', sessionResponse.user.email);
-      console.log('📊 Register: Profile completed:', sessionResponse.user.profileCompleted);
+      console.log('Register: Session created:', sessionResponse.user.email);
+      console.log('Register: Profile completed:', sessionResponse.user.profileCompleted);
       
       // Refresh user data to sync with backend
       console.log('🔄 Register: Refreshing user data...');
@@ -113,14 +113,14 @@ export default function Register() {
 
       // Navigate based on profile completion status
       if (sessionResponse.user.profileCompleted) {
-        console.log('➡️ Register: Navigating to dashboard');
+        console.log('Register: Navigating to dashboard');
         navigate('/dashboard');
       } else {
-        console.log('➡️ Register: Navigating to profile setup');
+        console.log('Register: Navigating to profile setup');
         navigate('/profile/setup');
       }
     } catch (err: any) {
-      console.error('❌ Register: Google registration failed:', err);
+      console.error('Register: Google registration failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);

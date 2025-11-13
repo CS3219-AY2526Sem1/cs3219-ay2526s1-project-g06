@@ -30,18 +30,18 @@ async function verifySession(req: Request): Promise<any> {
   }
 }
 
-// CREATE SESSION
+// Create Session
 router.post("/session", async (req, res) => {
   try {
     const { idToken } = req.body;
 
     if (!idToken) {
-      console.error('❌ User Service: No idToken in request');
+      console.error('User Service: No idToken in request');
       return res.status(400).json({ error: "ID token required" });
     }
 
-    console.log('🔍 User Service: Creating session via auth service...');
-    console.log('🔍 User Service: idToken length:', idToken.length);
+    console.log('User Service: Creating session via auth service...');
+    console.log('User Service: idToken length:', idToken.length);
 
     // First, verify the ID token to get the user's UID
     const decodedToken = await firebaseAuth.verifyIdToken(idToken);
@@ -49,16 +49,16 @@ router.post("/session", async (req, res) => {
     // Check if user exists in MongoDB and sync custom claims BEFORE creating session
     const existingUserCheck = await User.findOne({ uid: decodedToken.uid });
     if (existingUserCheck) {
-      console.log('🔄 User Service: Syncing profileCompleted to Firebase BEFORE session creation');
+      console.log('User Service: Syncing profileCompleted to Firebase BEFORE session creation');
       try {
         await firebaseAuth.setCustomUserClaims(decodedToken.uid, {
           profileCompleted: existingUserCheck.profileCompleted,
           bio: existingUserCheck.bio,
           language: existingUserCheck.language
         });
-        console.log('✅ User Service: Custom claims synced');
+        console.log('User Service: Custom claims synced');
       } catch (error: any) {
-        console.error('⚠️ User Service: Failed to sync custom claims:', error.message);
+        console.error('User Service: Failed to sync custom claims:', error.message);
       }
     }
 
@@ -89,17 +89,15 @@ router.post("/session", async (req, res) => {
     const existingUser = await User.findOne({ uid: decodedUser.uid });
 
     if (existingUser) {
-      // User exists - only update photoURL, keep existing displayName
-      console.log('🔄 User Service: User exists, updating photoURL only');
+      console.log('User Service: User exists, updating photoURL only');
 
       const updateData: any = {
         updatedAt: new Date()
       };
 
-      // Only update photoURL if it has changed or is being set for the first time
       if (decodedUser.photoURL && decodedUser.photoURL !== existingUser.photoURL) {
         updateData.photoURL = decodedUser.photoURL;
-        console.log('📸 User Service: Updating photoURL');
+        console.log('User Service: Updating photoURL');
       }
 
       const user = await User.findOneAndUpdate(
@@ -108,7 +106,7 @@ router.post("/session", async (req, res) => {
         { new: true }
       );
 
-      console.log('✅ User Service: Existing user session established');
+      console.log('User Service: Existing user session established');
 
       // Set session cookie
       const sessionToken = authResponse.data.sessionToken;
@@ -123,7 +121,7 @@ router.post("/session", async (req, res) => {
         user: {
           sub: user!.uid,
           email: user!.email,
-          displayName: user!.displayName, // Keep user's custom display name
+          displayName: user!.displayName, 
           photoURL: user!.photoURL,
           role: user!.role,
           bio: user!.bio,
@@ -134,12 +132,12 @@ router.post("/session", async (req, res) => {
     }
 
     // User doesn't exist - create new user with Firebase display name as initial value
-    console.log('➕ User Service: Creating new user');
+    console.log('User Service: Creating new user');
     
     const user = await User.create({
       uid: decodedUser.uid,
       email: decodedUser.email,
-      displayName: decodedUser.displayName || null, // Use Firebase name initially
+      displayName: decodedUser.displayName || null, 
       photoURL: decodedUser.photoURL || null,
       role: 'user',
       profileCompleted: false,
@@ -147,7 +145,7 @@ router.post("/session", async (req, res) => {
       updatedAt: new Date()
     });
 
-    console.log('✅ User Service: New user created');
+    console.log('User Service: New user created');
 
     // Set session cookie
     const sessionToken = authResponse.data.sessionToken;
@@ -171,10 +169,10 @@ router.post("/session", async (req, res) => {
       }
     });
   } catch (error: any) {
-    console.error('❌ User Service: Session creation error:', error.message);
+    console.error('User Service: Session creation error:', error.message);
     
     if (error.response) {
-      console.error('❌ User Service: Auth service response:', error.response.data);
+      console.error('User Service: Auth service response:', error.response.data);
     }
     
     res.status(500).json({ error: "Failed to create session" });
@@ -232,16 +230,15 @@ router.put("/profile", async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Sync profileCompleted to Firebase custom claims
     try {
       await firebaseAuth.setCustomUserClaims(verifiedUser.uid, {
         profileCompleted: true,
         bio: updatedUser.bio,
         language: updatedUser.language
       });
-      console.log('✅ User Service: Synced profileCompleted to Firebase custom claims');
+      console.log('User Service: Synced profileCompleted to Firebase custom claims');
     } catch (error: any) {
-      console.error('⚠️ User Service: Failed to sync custom claims:', error.message);
+      console.error('User Service: Failed to sync custom claims:', error.message);
     }
 
     res.json({
@@ -280,33 +277,32 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-// Delete account - Verify auth and delete user
+// Delete account 
 router.delete("/account", async (req, res) => {
   try {
     // Verify session with auth service
     const verifiedUser = await verifySession(req);
     
-    console.log('🔍 User Service: Deleting account for:', verifiedUser.uid);
+    console.log('User Service: Deleting account for:', verifiedUser.uid);
 
     // Delete user from MongoDB
     const deletedUser = await User.findOneAndDelete({ uid: verifiedUser.uid });
     
     if (!deletedUser) {
-      console.warn('⚠️ User Service: User not found in database:', verifiedUser.uid);
+      console.warn('User Service: User not found in database:', verifiedUser.uid);
     } else {
-      console.log('✅ User Service: User deleted from database');
+      console.log('User Service: User deleted from database');
     }
 
     // Delete user from Firebase
     try {
       await firebaseAuth.deleteUser(verifiedUser.uid);
-      console.log('✅ User Service: User deleted from Firebase');
+      console.log('User Service: User deleted from Firebase');
     } catch (firebaseError: any) {
-      console.error('❌ User Service: Failed to delete from Firebase:', firebaseError.message);
-      // Continue anyway since user is already deleted from MongoDB
+      console.error('User Service: Failed to delete from Firebase:', firebaseError.message);
     }
 
-    // Revoke session via auth service
+    // Revoke session 
     try {
       const sessionCookie = req.cookies.session;
       await axios.post(
@@ -318,9 +314,9 @@ router.delete("/account", async (req, res) => {
           }
         }
       );
-      console.log('✅ User Service: Session revoked');
+      console.log('User Service: Session revoked');
     } catch (error) {
-      console.error('⚠️ User Service: Failed to revoke session:', error);
+      console.error('User Service: Failed to revoke session:', error);
     }
 
     // Clear session cookie
@@ -330,7 +326,7 @@ router.delete("/account", async (req, res) => {
       message: "Account deleted successfully" 
     });
   } catch (error: any) {
-    console.error('❌ User Service: Account deletion error:', error.message);
+    console.error('User Service: Account deletion error:', error.message);
     res.status(401).json({ error: 'Unauthorized' });
   }
 });

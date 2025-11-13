@@ -18,22 +18,22 @@ export default function Login() {
     setError('');
 
     try {
-      console.log('📧 Login: Email sign-in starting...');
+      console.log('Login: Email sign-in starting...');
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
       
-      console.log('🔑 Login: Getting ID token...');
+      console.log('Login: Getting ID token...');
       const idToken = await userCredential.user.getIdToken();
       
-      console.log('📤 Login: Creating backend session...');
+      console.log('Login: Creating backend session...');
       await createSession(idToken);
       
-      console.log('🔄 Login: Refreshing user data...');
+      console.log('Login: Refreshing user data...');
       await refreshUser(); 
       
-      console.log('✅ Login: Email login successful, navigating to dashboard');
+      console.log('Login: Email login successful, navigating to dashboard');
       navigate('/dashboard');
     } catch (err: any) {
-      console.error('❌ Login: Email login failed:', err);
+      console.error('Login: Email login failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -49,30 +49,30 @@ export default function Login() {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       
-      console.log('✅ Login: Google sign-in successful:', userCredential.user.email);
-      console.log('🔑 Login: Getting ID token...');
+      console.log('Login: Google sign-in successful:', userCredential.user.email);
+      console.log('Login: Getting ID token...');
       const idToken = await userCredential.user.getIdToken();
       
-      console.log('📤 Login: Creating backend session...');
+      console.log('Login: Creating backend session...');
       const sessionResponse = await createSession(idToken);
       
-      console.log('✅ Login: Session created:', sessionResponse.user.email);
-      console.log('📊 Login: Profile completed:', sessionResponse.user.profileCompleted);
+      console.log('Login: Session created:', sessionResponse.user.email);
+      console.log('Login: Profile completed:', sessionResponse.user.profileCompleted);
       
       // Refresh user data to sync with backend
-      console.log('🔄 Login: Refreshing user data...');
+      console.log('Login: Refreshing user data...');
       await refreshUser(); // ← Changed from setUser to refreshUser
 
       // Navigate based on profile completion status
       if (sessionResponse.user.profileCompleted) {
-        console.log('➡️ Login: Navigating to dashboard');
+        console.log('Login: Navigating to dashboard');
         navigate('/dashboard');
       } else {
-        console.log('➡️ Login: Navigating to profile setup');
+        console.log('Login: Navigating to profile setup');
         navigate('/profile/setup');
       }
     } catch (err: any) {
-      console.error('❌ Login: Google login failed:', err);
+      console.error('Login: Google login failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);

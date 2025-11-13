@@ -213,20 +213,20 @@ export default function Dashboard() {
   }
 
   try {
-    console.log('🗑️ Dashboard: Starting account deletion...');
+    console.log('Dashboard: Starting account deletion...');
 
     // 0. Delete question history
     await deleteQuestionHistory();
     
     // 1. Delete account via backend (deletes from Firebase + MongoDB)
     await deleteAccount();
-    console.log('✅ Dashboard: Account deleted from backend');
+    console.log('Dashboard: Account deleted from backend');
     
     // 2. Sign out WITHOUT triggering auth state listeners
     // This prevents the second unauthorized request
     const auth = getAuth();
     await auth.signOut();
-    console.log('✅ Dashboard: Firebase signed out');
+    console.log('Dashboard: Firebase signed out');
     
     // 3. Clear local state
     signOut(); // This will clear AuthContext
@@ -235,7 +235,7 @@ export default function Dashboard() {
     navigate('/login', { replace: true });
     
   } catch (error) {
-    console.error('❌ Dashboard: Account deletion failed:', error);
+    console.error('Dashboard: Account deletion failed:', error);
     alert('Failed to delete account. Please try again.');
   }
 };
