@@ -155,7 +155,7 @@ router.get("/topics",
     });
 
 // read all difficulties 
-router.get("difficulties",
+router.get("/difficulties",
   async(req:Request, res:Response) => {
     try {
       const orderDifficulties = sortDifficulty(await Question.distinct("difficulty")); 
