@@ -1,0 +1,217 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'services/**'
+      - 'docker-compose.yml'
+      - 'nginx.conf'
+      - 'scripts/deploy-backend.sh'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > ~/.ssh/peerprep-key.pem
+          chmod 600 ~/.ssh/peerprep-key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          QUESTION_HISTORY_ADD_SECRET: ${{ secrets.QUESTION_HISTORY_ADD_SECRET }}
+          QUESTION_SERVICE_URL: ${{ secrets.QUESTION_SERVICE_URL }}
+          QUESTION_HISTORY_URL: ${{ secrets.QUESTION_HISTORY_URL }}
+          MONGO_URL: ${{ secrets.MONGO_URL }}
+          MONGO_URL_QUESTIONS: ${{ secrets.MONGO_URL_QUESTIONS }}
+          MONGO_URL_QUESTION_HISTORY: ${{ secrets.MONGO_URL_QUESTION_HISTORY }}
+          CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Create a temporary file with the Firebase JSON to avoid escaping issues
+          echo "$FIREBASE_JSON" > /tmp/firebase.json
+
+          # Copy the Firebase JSON file to EC2
+          scp -i ~/.ssh/peerprep-key.pem /tmp/firebase.json ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/firebase.json
+
+          # Pass other secrets to EC2 via environment variables
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
+
+            # Set environment variables from the GitHub runner
+            export QUESTION_HISTORY_ADD_SECRET='${{ secrets.QUESTION_HISTORY_ADD_SECRET }}'
+            export QUESTION_SERVICE_URL='${{ secrets.QUESTION_SERVICE_URL }}'
+            export QUESTION_HISTORY_URL='${{ secrets.QUESTION_HISTORY_URL }}'
+            export MONGO_URL='${{ secrets.MONGO_URL }}'
+            export MONGO_URL_QUESTIONS='${{ secrets.MONGO_URL_QUESTIONS }}'
+            export MONGO_URL_QUESTION_HISTORY='${{ secrets.MONGO_URL_QUESTION_HISTORY }}'
+            export CORS_ORIGIN='${{ secrets.CORS_ORIGIN }}'
+            export NODE_ENV='${{ secrets.NODE_ENV }}'
+
+            # Read Firebase JSON from the copied file
+            export FIREBASE_JSON=$(cat /tmp/firebase.json)
+
+            echo "📂 Navigating to project directory..."
+            cd /home/ubuntu/cs3219-ay2526s1-project-g06
+
+            echo "📥 Pulling latest code from master..."
+            git fetch origin
+            git reset --hard origin/master
+
+            echo "📝 Creating .env files from GitHub Secrets..."
+
+            # Debug: Check if variables are set
+            echo "Debug - NODE_ENV is: ${NODE_ENV}"
+            echo "Debug - CORS_ORIGIN is: ${CORS_ORIGIN}"
+            echo "Debug - MONGO_URL length: ${#MONGO_URL}"
+            echo "Debug - FIREBASE_JSON length: ${#FIREBASE_JSON}"
+
+            # Auth Service .env
+            echo "PORT=4000" > services/auth-service/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/auth-service/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/auth-service/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/auth-service/.env
+            echo "✓ Created services/auth-service/.env"
+
+            # User Service .env
+            echo "PORT=4001" > services/user/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/user/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/user/.env
+            echo "MONGO_URL=${MONGO_URL}" >> services/user/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_JSON}" >> services/user/.env
+            echo "AUTH_SERVICE_URL=http://auth-service:4000" >> services/user/.env
+
+            echo "✓ Created services/user/.env"
+
+            # Verify the file was created correctly
+            echo "Debug - User service .env file size: $(wc -c < services/user/.env) bytes"
+
+            # Matching Service .env
+            echo "PORT=4002" > services/matching/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/matching/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/matching/.env
+            echo "✓ Created services/matching/.env"
+
+            # Question Service .env
+            echo "PORT=4003" > services/question/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/question/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/question/.env
+            echo "MONGO_URL=${MONGO_URL_QUESTIONS}" >> services/question/.env
+            echo "✓ Created services/question/.env"
+
+            # Collaboration Service .env
+            echo "PORT=4004" > services/collab/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/collab/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/collab/.env
+            echo "QUESTION_SERVICE_URL=${QUESTION_SERVICE_URL}" >> services/collab/.env
+            echo "QUESTION_HISTORY_URL=${QUESTION_HISTORY_URL}" >> services/collab/.env
+            echo "QUESTION_HISTORY_ADD_SECRET=${QUESTION_HISTORY_ADD_SECRET}" >> services/collab/.env
+            echo "✓ Created services/collab/.env"
+
+            # Question History Service .env
+            echo "PORT=4005" > services/history/.env
+            echo "NODE_ENV=${NODE_ENV}" >> services/history/.env
+            echo "CORS_ORIGIN=${CORS_ORIGIN}" >> services/history/.env
+            echo "MONGO_URL=${MONGO_URL_QUESTION_HISTORY}" >> services/history/.env
+            echo "QUESTION_HISTORY_ADD_SECRET=${QUESTION_HISTORY_ADD_SECRET}" >> services/history/.env
+            echo "✓ Created services/history/.env"
+
+            # Clean up the temporary Firebase JSON file
+            rm -f /tmp/firebase.json
+
+            echo "✅ All .env files configured from GitHub Secrets"
+
+            echo "🔐 Setting up SSL certificate..."
+            # Create SSL directory in project folder (Docker can access this)
+            mkdir -p ssl
+            if [ ! -f ssl/nginx-selfsigned.crt ]; then
+              echo "Generating self-signed certificate..."
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                -keyout ssl/nginx-selfsigned.key \
+                -out ssl/nginx-selfsigned.crt \
+                -subj "/C=SG/ST=Singapore/L=Singapore/O=PeerPrep/CN=16.176.159.10"
+              chmod 644 ssl/nginx-selfsigned.crt
+              chmod 644 ssl/nginx-selfsigned.key
+              echo "✅ SSL certificate created"
+            else
+              echo "✅ SSL certificate already exists"
+            fi
+
+            echo "🛑 Stopping existing containers..."
+            docker-compose down
+
+            echo "🔨 Building and starting containers..."
+            docker-compose up -d --build
+
+            echo "⏳ Waiting for services to start..."
+            sleep 10
+
+            echo "📊 Checking container status..."
+            docker-compose ps
+
+            echo "✅ Deployment complete!"
+          DEPLOY_SCRIPT
+
+          # Clean up the temporary file on the runner
+          rm -f /tmp/firebase.json
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying services are responding..."
+
+          # Check if services are accessible (retry up to 5 times)
+          for i in {1..5}; do
+            if curl -f -s http://${{ secrets.EC2_HOST }}/health > /dev/null 2>&1; then
+              echo "✅ Backend services are healthy!"
+              break
+            else
+              echo "⏳ Waiting for services to be ready (attempt $i/5)..."
+              sleep 5
+            fi
+          done
+
+      - name: Get service logs
+        if: always()
+        run: |
+          ssh -i ~/.ssh/peerprep-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/cs3219-ay2526s1-project-g06
+            echo "📝 Recent logs from services:"
+            docker-compose logs --tail=50
+          EOF
+
+      - name: Deployment summary
+        run: |
+          echo "## Backend Deployment Summary :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Success :white_check_mark:" >> $GITHUB_STEP_SUMMARY
+          echo "- **EC2 Host**: ${{ secrets.EC2_HOST }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services Deployed**:" >> $GITHUB_STEP_SUMMARY
+          echo "  - Auth Service (Port 4000)" >> $GITHUB_STEP_SUMMARY
+          echo "  - User Service (Port 4001)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Matching Service (Port 4002)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Question Service (Port 4003)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Collab Service (Port 4004)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Nginx Reverse Proxy (Port 80)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Endpoints" >> $GITHUB_STEP_SUMMARY
+          echo "- Health check: http://${{ secrets.EC2_HOST }}/health" >> $GITHUB_STEP_SUMMARY
+          echo "- User API: http://${{ secrets.EC2_HOST }}/user" >> $GITHUB_STEP_SUMMARY
+          echo "- Matching WebSocket: http://${{ secrets.EC2_HOST }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ~/.ssh/peerprep-key.pem
